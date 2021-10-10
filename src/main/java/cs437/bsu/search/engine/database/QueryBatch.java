@@ -13,11 +13,13 @@ public class QueryBatch {
     private PreparedStatement ps;
     private QueryType type;
     private int numParams;
+    private int batchSize;
 
     protected QueryBatch(QueryType type, PreparedStatement ps) throws SQLException {
         this.ps = ps;
         this.type = type;
         this.numParams = ps.getParameterMetaData().getParameterCount();
+        batchSize = 0;
     }
 
     public void set(int index, Object obj){
@@ -46,10 +48,15 @@ public class QueryBatch {
         }
     }
 
+    public int getBatchSize(){
+        return batchSize;
+    }
+
     public void addBatch(){
         LOGGER.trace("Add a SQL batch for: {}", type.name());
         try {
             ps.addBatch();
+            batchSize++;
         }catch (SQLException e){
             LOGGER.atError().setCause(e).log("Failed to add a Batch for: {}", type.name());
         }
@@ -59,6 +66,7 @@ public class QueryBatch {
         LOGGER.trace("Executing SQL batch for: {}", type.name());
         try {
             ps.executeBatch();
+            batchSize = 0;
         }catch (SQLException e){
             LOGGER.atError().setCause(e).log("Failed to execute Batch for: {}", type.name());
         }

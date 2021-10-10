@@ -1,8 +1,6 @@
 package cs437.bsu.search.engine.corpus;
 
-import cs437.bsu.search.engine.database.Database;
 import cs437.bsu.search.engine.database.QueryBatch;
-import cs437.bsu.search.engine.database.QueryType;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import org.slf4j.Logger;
 

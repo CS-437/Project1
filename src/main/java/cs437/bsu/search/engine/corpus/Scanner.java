@@ -91,6 +91,7 @@ public class Scanner {
         Collection<String> patterns = new ArrayList<>();
         patterns.add(Pattern.compile("\\d+(|.\\d+)").pattern()); //Numbers
         patterns.add(Pattern.compile("\\p{Punct}+").pattern()); //Symbols
+        patterns.add(Pattern.compile("\\b(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]").pattern()); //URLS
 
         String globalPattern = "";
         for(String pattern : patterns) {
@@ -123,6 +124,7 @@ public class Scanner {
             if(word == null)
                 word = token.value().toLowerCase();
 
+            word = word.replace(".", "");
             LOGGER.trace("Found Token: {}", word);
 
             Token t = tokens.get(word);
@@ -149,6 +151,14 @@ public class Scanner {
         LOGGER.debug("Cleaning Tokens of illegal patterns.");
         removeTokens(tokens,  (String token) -> {
             return pattern.matcher(token).matches();
+        });
+    }
+
+    public void removeLongShortTokens(Map<String, Token> tokens){
+        LOGGER.debug("Removing Tokens longer than 45 characters and shorter than 3.");
+        removeTokens(tokens,  (String token) -> {
+            int length = token.length();
+            return  length < 3 || 45 < length;
         });
     }
 
