@@ -1,34 +1,39 @@
 package cs437.bsu.search.engine.corpus;
 
-import cs437.bsu.search.engine.util.TaskExecutor;
+import cs437.bsu.search.engine.database.Database;
+import cs437.bsu.search.engine.database.QueryBatch;
+import cs437.bsu.search.engine.database.QueryType;
+import cs437.bsu.search.engine.util.LoggerInitializer;
+import org.slf4j.Logger;
 
-public class Token implements DataSaver {
+public class Token {
+
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Token.class);
 
     private String token;
-    private long hashValue;
-    private int vocabSize;
-    private int collectionSize;
     private int frequency;
 
-    protected Token(String token, int vocabSize, int collectionSize) {
+    protected Token(String token) {
         this.token = token;
-        this.vocabSize = vocabSize;
-        this.collectionSize = collectionSize;
         this.frequency = 1;
-
-        // Save time in creating this object
-        TaskExecutor.StartTask(token, Token::computeHash, (Long hash) -> {this.hashValue = hash;});
     }
 
-    protected void increment(){
+    protected void incrementFrequency(){
         frequency++;
     }
 
-    @Override
-    public void saveData() {
+    public void saveData(int docId, QueryBatch qb) {
+        LOGGER.debug("Starting upload of Token to database. DocId={},Token={}", docId, token);
 
+        long hashvalue = computeHash(token);
+
+        LOGGER.debug("Uploading data: DocId={},token={},hashValue={},frequency={}", docId, token, hashvalue, frequency);
+        qb.set(1, docId);
+        qb.set(2, token);
+        qb.set(3, hashvalue);
+        qb.set(4, frequency);
+        qb.addBatch();
     }
-
 
     private static long computeHash(String token) {
         long h = 1125899906842597L; // prime

@@ -24,3 +24,9 @@ hs_err_pid*
 
 # Intellij
 **/.idea/
+
+# Maven
+**/target/
+
+# Personal
+personal-config.properties

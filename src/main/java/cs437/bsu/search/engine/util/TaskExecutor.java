@@ -1,36 +1,21 @@
 package cs437.bsu.search.engine.util;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+import org.slf4j.Logger;
 
 public class TaskExecutor {
 
-    public static <T, R> void StartTask(T value, Function<T, R> task, Consumer<R> callBack){
-        Thread t = new Thread(new Task(value, task, callBack));
-        t.start();
-    }
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(TaskExecutor.class);
+    private static long TASK_ID = 0;
 
-    public static void StartTask(Runnable task, Runnable callBack){
+    public synchronized static void StartTask(Runnable task, Runnable callBack){
+        long id = TASK_ID++;
         Thread t = new Thread(() -> {
+            LOGGER.trace("Starting Task: {}", id);
             task.run();
+            LOGGER.trace("Invoking callback for Task: {}", id);
             callBack.run();
+            LOGGER.trace("Ending Task: {}", id);
         });
         t.start();
-    }
-
-    private static class Task<T, R> implements Runnable{
-
-        private T value;
-        private Function<T, R> task;
-        private Consumer<R> callback;
-
-        private Task(T value, Function<T, R> task, Consumer<R> callBack){
-
-        }
-
-        @Override
-        public void run() {
-            callback.accept(task.apply(value));
-        }
     }
 }
