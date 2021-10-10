@@ -92,6 +92,7 @@ public class Scanner {
         patterns.add(Pattern.compile("\\d+(|.\\d+)").pattern()); //Numbers
         patterns.add(Pattern.compile("\\p{Punct}+").pattern()); //Symbols
         patterns.add(Pattern.compile("\\b(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]").pattern()); //URLS
+        patterns.add(Pattern.compile(".*[^a-zA-Z-_`'‘]+.*").pattern()); //Only English Words
 
         String globalPattern = "";
         for(String pattern : patterns) {

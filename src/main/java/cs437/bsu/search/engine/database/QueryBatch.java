@@ -53,23 +53,25 @@ public class QueryBatch {
     }
 
     public void addBatch(){
-        LOGGER.trace("Add a SQL batch for: {}", type.name());
+        LOGGER.info("Add a SQL batch for: {}", type.name());
         try {
             ps.addBatch();
             batchSize++;
         }catch (SQLException e){
             LOGGER.atError().setCause(e).log("Failed to add a Batch for: {}", type.name());
         }
+        LOGGER.info("Batch added for: {}", type.name());
     }
 
     public void executeBatch(){
-        LOGGER.trace("Executing SQL batch for: {}", type.name());
+        LOGGER.info("Executing SQL batch for: {}. Batch Size: {}", type.name(), batchSize);
         try {
             ps.executeBatch();
             batchSize = 0;
         }catch (SQLException e){
             LOGGER.atError().setCause(e).log("Failed to execute Batch for: {}", type.name());
         }
+        LOGGER.info("Batch executed for: {}", type.name());
     }
 
     protected PreparedStatement getStatement(){
