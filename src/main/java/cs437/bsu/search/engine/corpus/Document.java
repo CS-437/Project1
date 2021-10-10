@@ -1,7 +1,7 @@
 package cs437.bsu.search.engine.corpus;
 
 import cs437.bsu.search.engine.database.Database;
-import cs437.bsu.search.engine.database.Query;
+import cs437.bsu.search.engine.database.QueryBatch;
 import cs437.bsu.search.engine.database.QueryType;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import cs437.bsu.search.engine.util.PathRelavizor;
@@ -15,7 +15,7 @@ import java.util.Map;
 
 public class Document {
 
-    private static final Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Document.class);
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Document.class);
 
     private Map<String, Token> tokens;
     private File file;
@@ -77,13 +77,16 @@ public class Document {
         Database db = Database.getInstance();
 
         LOGGER.debug("Uploading data: id={},title={},path={}", id, title, file.getPath().toString());
-        Query q = db.getQuery(QueryType.AddDocument);
+        QueryBatch q = db.getQuery(QueryType.AddDocument);
         q.set(1, id);
         q.set(2, title);
         q.set(3, PathRelavizor.getRelativeLocation(file));
-        db.executeQuery(q);
+        q.addBatch();
+        q.executeBatch();
 
+        QueryBatch tokenQuery = db.getQuery(QueryType.AddToken);
         for(Token t : tokens.values())
-            t.saveData(id);
+            t.saveData(id, tokenQuery);
+        tokenQuery.executeBatch();
     }
 }

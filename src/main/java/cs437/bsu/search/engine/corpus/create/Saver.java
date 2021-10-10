@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Saver extends Thread {
 
     private static final int NUM_OPEN_PARSING_DOCS = 1000;
-    private static final Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Saver.class);
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Saver.class);
 
     private Queue<Document> documents;
     private boolean keepRunning;
@@ -44,30 +44,18 @@ public class Saver extends Thread {
     public void run() {
         LOGGER.info("Saver running ...");
 
-        pause(4000);
-
         while(keepRunning || !documents.isEmpty()){
             while(!documents.isEmpty()){
                 Document doc = documents.poll();
-                boolean readyToSave = doc.readyToSaveData();
-                LOGGER.atTrace().addKeyValue("Loading", readyToSave).log("Attempting to load Document data into database: {}", doc.getDocumentPath());
-
-                if(readyToSave)
+                if(doc.readyToSaveData()) {
                     doc.saveData();
-                else
+                    LOGGER.debug("Attempting to load Document data into database: {}", doc.getDocumentPath());
+                }else {
                     documents.add(doc);
+                }
             }
-            pause(50);
         }
 
         LOGGER.info("Saver terminating ...");
-    }
-
-    private void pause(long time){
-        try {
-            Thread.sleep(time);
-        } catch (InterruptedException e) {
-            LOGGER.warn("Failed to sleep for 50 milliseconds.", e);
-        }
     }
 }

@@ -8,6 +8,7 @@ public class PathRelavizor {
     private static Path JAR_LOCATION = new File(System.getProperty("user.dir")).toPath();
 
     public static String getRelativeLocation(File f){
-        return JAR_LOCATION.relativize(f.toPath()).toString();
+        Path filePath = new File(f.getAbsolutePath()).toPath();
+        return JAR_LOCATION.relativize(filePath).toString();
     }
 }

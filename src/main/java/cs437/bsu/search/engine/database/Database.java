@@ -6,14 +6,13 @@ import org.slf4j.Logger;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Database {
 
-    private static final Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Database.class);
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Database.class);
     private static Database DB;
 
     public static Database getInstance(){
@@ -23,7 +22,7 @@ public class Database {
     }
 
     private Connection connection;
-    private Map<QueryType, Query> queries;
+    private Map<QueryType, QueryBatch> queries;
 
     private Database(){
         LOGGER.info("Setting up Database Connection ...");
@@ -55,27 +54,27 @@ public class Database {
         queries = new HashMap<>();
         for(Map.Entry<QueryType, String> entry : QueryType.loadQueries().entrySet()) {
             LOGGER.trace("\tAdding Query: {}", entry.getKey().name());
-            queries.put(entry.getKey(), new Query(entry.getKey(), connection.prepareStatement(entry.getValue())));
+            queries.put(entry.getKey(), new QueryBatch(entry.getKey(), connection.prepareStatement(entry.getValue())));
         }
     }
 
-    public Query getQuery(QueryType type){
+    public QueryBatch getQuery(QueryType type){
         LOGGER.trace("Query Requested: {}", type);
         return queries.get(type).reset();
     }
 
-    public ResultSet executeQuery(Query q){
-        LOGGER.debug("Sending Query: {}", q);
-        try {
-            if (q.getType().isUpdateQuery())
-                q.getStatement().executeUpdate();
-            else
-                return q.getStatement().executeQuery();
-        }catch (SQLException e){
-            LOGGER.error("Failed to send query.", e);
-        }
-        return null;
-    }
+//    public ResultSet executeQuery(QueryBatch q){
+//        LOGGER.debug("Sending Query: {}", q);
+//        try {
+//            if (q.getType().isUpdateQuery())
+//                q.getStatement().executeUpdate();
+//            else
+//                return q.getStatement().executeQuery();
+//        }catch (SQLException e){
+//            LOGGER.error("Failed to send query.", e);
+//        }
+//        return null;
+//    }
 
     private static class DatabaseShutdownHook implements Runnable {
 
@@ -84,7 +83,7 @@ public class Database {
             LOGGER.info("Closing database connection.");
             if(DB != null){
                 try{
-                    for(Map.Entry<QueryType, Query> entry : DB.queries.entrySet())
+                    for(Map.Entry<QueryType, QueryBatch> entry : DB.queries.entrySet())
                         entry.getValue().getStatement().close();
                     DB.connection.close();
 

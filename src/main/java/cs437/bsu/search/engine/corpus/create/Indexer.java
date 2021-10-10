@@ -10,7 +10,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Indexer extends Thread {
 
-    private static final Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Indexer.class);
+    private static final int MAX_DOCS_BUILDING = 1000;
+
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Indexer.class);
 
     private Queue<Document> documents;
     private Saver saver;

@@ -18,9 +18,9 @@ import java.util.regex.Pattern;
 public class Scanner {
 
     private static Scanner INSTANCE;
-    private static final Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Scanner.class);
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Scanner.class);
 
-    public static Scanner getInstance(){
+    public synchronized static Scanner getInstance(){
         if(INSTANCE == null)
             INSTANCE = new Scanner();
         return INSTANCE;

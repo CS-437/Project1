@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 
 public class TaskExecutor {
 
-    private static final Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(TaskExecutor.class);
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(TaskExecutor.class);
     private static long TASK_ID = 0;
 
     public synchronized static void StartTask(Runnable task, Runnable callBack){

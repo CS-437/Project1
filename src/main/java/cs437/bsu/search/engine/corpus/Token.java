@@ -1,14 +1,14 @@
 package cs437.bsu.search.engine.corpus;
 
 import cs437.bsu.search.engine.database.Database;
-import cs437.bsu.search.engine.database.Query;
+import cs437.bsu.search.engine.database.QueryBatch;
 import cs437.bsu.search.engine.database.QueryType;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import org.slf4j.Logger;
 
 public class Token {
 
-    private static final Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Token.class);
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Token.class);
 
     private String token;
     private int frequency;
@@ -22,19 +22,17 @@ public class Token {
         frequency++;
     }
 
-    public void saveData(int docId) {
+    public void saveData(int docId, QueryBatch qb) {
         LOGGER.debug("Starting upload of Token to database. DocId={},Token={}", docId, token);
-        Database db = Database.getInstance();
 
         long hashvalue = computeHash(token);
 
         LOGGER.debug("Uploading data: DocId={},token={},hashValue={},frequency={}", docId, token, hashvalue, frequency);
-        Query q = db.getQuery(QueryType.AddToken);
-        q.set(1, docId);
-        q.set(2, token);
-        q.set(3, hashvalue);
-        q.set(4, frequency);
-        db.executeQuery(q);
+        qb.set(1, docId);
+        qb.set(2, token);
+        qb.set(3, hashvalue);
+        qb.set(4, frequency);
+        qb.addBatch();
     }
 
     private static long computeHash(String token) {

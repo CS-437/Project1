@@ -6,15 +6,15 @@ import org.slf4j.Logger;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class Query {
+public class QueryBatch {
 
-    private static final Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Query.class);
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(QueryBatch.class);
 
     private PreparedStatement ps;
     private QueryType type;
     private int numParams;
 
-    protected Query(QueryType type, PreparedStatement ps) throws SQLException {
+    protected QueryBatch(QueryType type, PreparedStatement ps) throws SQLException {
         this.ps = ps;
         this.type = type;
         this.numParams = ps.getParameterMetaData().getParameterCount();
@@ -46,6 +46,24 @@ public class Query {
         }
     }
 
+    public void addBatch(){
+        LOGGER.trace("Add a SQL batch for: {}", type.name());
+        try {
+            ps.addBatch();
+        }catch (SQLException e){
+            LOGGER.atError().setCause(e).log("Failed to add a Batch for: {}", type.name());
+        }
+    }
+
+    public void executeBatch(){
+        LOGGER.trace("Executing SQL batch for: {}", type.name());
+        try {
+            ps.executeBatch();
+        }catch (SQLException e){
+            LOGGER.atError().setCause(e).log("Failed to execute Batch for: {}", type.name());
+        }
+    }
+
     protected PreparedStatement getStatement(){
         return ps;
     }
@@ -54,7 +72,7 @@ public class Query {
         return type;
     }
 
-    protected Query reset(){
+    protected QueryBatch reset(){
         LOGGER.debug("Resetting query parameters.");
         try {
             ps.clearParameters();
