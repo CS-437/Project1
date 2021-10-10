@@ -39,7 +39,9 @@ public enum QueryType {
             String line;
             while ((line = br.readLine()) != null)
                 sb.append(line);
-        }catch (IOException e){}
+        }catch (IOException e){
+            e.printStackTrace();
+        }
         return sb.toString();
     }
 }

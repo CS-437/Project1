@@ -9,9 +9,7 @@ use TokenIndex;
 CREATE TABLE IF NOT EXISTS Tokens (
 	TokenPK int not null,
 	Token varchar(45) not null,
-    HashValue int not null,
-    VocabSize int,
-    CollectionSize int
+    HashValue int not null
 );
 
 CREATE TABLE IF NOT EXISTS Documents (
@@ -30,13 +28,13 @@ CREATE TABLE IF NOT EXISTS Intersection (
 -- Add Primary Keys --
 -- ----------------- --
 
-ALTER TABLE Tokens 
+ALTER TABLE Tokens
 MODIFY TokenPK int not null AUTO_INCREMENT PRIMARY KEY;
 
-ALTER TABLE Documents 
+ALTER TABLE Documents
 ADD PRIMARY KEY (DocumentID);
 
-ALTER TABLE Intersection 
+ALTER TABLE Intersection
 ADD PRIMARY KEY (TokenFK, DocumentID);
 
 -- ----------------- --
@@ -50,11 +48,11 @@ CREATE INDEX FK_IND_2 ON Intersection(DocumentID);
 -- Add Foreign Keys --
 -- ---------------- --
 
-ALTER TABLE Intersection 
+ALTER TABLE Intersection
 ADD CONSTRAINT Intersection_FK1 FOREIGN KEY
 (TokenFK) REFERENCES Tokens (TokenPK);
 
-ALTER TABLE Intersection 
+ALTER TABLE Intersection
 ADD CONSTRAINT Intersection_FK2 FOREIGN KEY
 (DocumentID) REFERENCES Documents (DocumentID);
 
@@ -71,20 +69,18 @@ CREATE INDEX Token_Hash ON Tokens(HashValue);
 DELIMITER $$
 CREATE PROCEDURE `Update_Add_Token` (
 		in docId int,
-        in token varchar(45), 
-        in hashValue int, 
-        in frequency int, 
-        in vocabSize int, 
-        in collectionSize int)
+        in tkn varchar(45),
+        in hash int,
+        in frequency int)
 BEGIN
 Declare tpk int default -1;
 
-if (select count(*) from tokens as t where t.HashValue=hashValue and t.Token like token) = 0 then
-	insert into Tokens (Token, HashValue, VocabSize, CollectionSize) VALUES (token, hashValue, vocabSize, collectionSize);
+if (select count(*) from tokens as t where t.HashValue=hash and t.Token like tkn) = 0 then
+	insert into Tokens (Token, HashValue) VALUES (tkn, hash);
 end if;
 
-Select TokenPK into tpk from Tokens
-where t.HashValue=hashValue and t.Token like token;
+Select TokenPK into tpk from Tokens as t
+where t.HashValue=hash and t.Token like tkn;
 
 insert into Intersection (TokenFK, DocumentID, Frequency) VALUES (tpk, docId, frequency);
 END$$
