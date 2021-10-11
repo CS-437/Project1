@@ -10,6 +10,7 @@ import edu.stanford.nlp.pipeline.CoreDocument;
 import org.slf4j.Logger;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -62,9 +63,10 @@ public class Document {
             CoreDocument doc = s.scan(sb);
 
             LOGGER.trace("Deeper scan complete. Starting token cleaning.");
-            tokens = s.getDocTokens(doc, s::removeStopwords, s::removeIllegalPatterns);
+            tokens = s.getDocTokens(doc, s::removeStopwords, s::removeIllegalPatterns, s::removeLongShortTokens);
 
             LOGGER.trace("Token cleaning complete.");
+            LOGGER.info("Tokens found in Document: {}", tokens.size());
         }, () -> {parsedData = true;});
     }
 
@@ -73,7 +75,7 @@ public class Document {
     }
 
     public void saveData() {
-        LOGGER.info("Starting upload of Document data to database: {}", id);
+        LOGGER.debug("Starting upload of Document data to database: {}", id);
         Database db = Database.getInstance();
 
         LOGGER.debug("Uploading data: id={},title={},path={}", id, title, file.getPath().toString());
@@ -82,11 +84,14 @@ public class Document {
         q.set(2, title);
         q.set(3, PathRelavizor.getRelativeLocation(file));
         q.addBatch();
-        q.executeBatch();
 
         QueryBatch tokenQuery = db.getQuery(QueryType.AddToken);
         for(Token t : tokens.values())
             t.saveData(id, tokenQuery);
-        tokenQuery.executeBatch();
+
+        if(q.getBatchSize() >= 20){
+            q.executeBatch();
+            tokenQuery.executeBatch();
+        }
     }
 }

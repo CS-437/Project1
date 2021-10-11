@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -91,6 +92,8 @@ public class Scanner {
         Collection<String> patterns = new ArrayList<>();
         patterns.add(Pattern.compile("\\d+(|.\\d+)").pattern()); //Numbers
         patterns.add(Pattern.compile("\\p{Punct}+").pattern()); //Symbols
+        patterns.add(Pattern.compile("\\b(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]").pattern()); //URLS
+        patterns.add(Pattern.compile(".*[^a-zA-Z-_`'‘]+.*").pattern()); //Only English Words
 
         String globalPattern = "";
         for(String pattern : patterns) {
@@ -103,7 +106,8 @@ public class Scanner {
 
     public CoreDocument scan(StringBuilder sb){
         LOGGER.info("Converting document to a CoreDocument.");
-        return pipeline.processToCoreDocument(sb.toString());
+        String doc = new String(sb.toString().getBytes(), StandardCharsets.US_ASCII).replace((char) 65533, '~');
+        return pipeline.processToCoreDocument(doc);
     }
 
     public Map<String, Token> getDocTokens(CoreDocument document, Consumer<Map<String, Token>> ... cleaningMethods){
@@ -123,6 +127,7 @@ public class Scanner {
             if(word == null)
                 word = token.value().toLowerCase();
 
+            word = word.replace(".", "");
             LOGGER.trace("Found Token: {}", word);
 
             Token t = tokens.get(word);
@@ -149,6 +154,14 @@ public class Scanner {
         LOGGER.debug("Cleaning Tokens of illegal patterns.");
         removeTokens(tokens,  (String token) -> {
             return pattern.matcher(token).matches();
+        });
+    }
+
+    public void removeLongShortTokens(Map<String, Token> tokens){
+        LOGGER.debug("Removing Tokens longer than 45 characters and shorter than 3.");
+        removeTokens(tokens,  (String token) -> {
+            int length = token.length();
+            return  length < 3 || 45 < length;
         });
     }
 

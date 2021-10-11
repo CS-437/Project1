@@ -1,8 +1,6 @@
 package cs437.bsu.search.engine.corpus;
 
-import cs437.bsu.search.engine.database.Database;
 import cs437.bsu.search.engine.database.QueryBatch;
-import cs437.bsu.search.engine.database.QueryType;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import org.slf4j.Logger;
 
@@ -27,7 +25,7 @@ public class Token {
 
         long hashvalue = computeHash(token);
 
-        LOGGER.debug("Uploading data: DocId={},token={},hashValue={},frequency={}", docId, token, hashvalue, frequency);
+        LOGGER.trace("Uploading data: DocId={},token={},hashValue={},frequency={}", docId, token, hashvalue, frequency);
         qb.set(1, docId);
         qb.set(2, token);
         qb.set(3, hashvalue);

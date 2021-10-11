@@ -83,8 +83,10 @@ public class Database {
             LOGGER.info("Closing database connection.");
             if(DB != null){
                 try{
-                    for(Map.Entry<QueryType, QueryBatch> entry : DB.queries.entrySet())
+                    for(Map.Entry<QueryType, QueryBatch> entry : DB.queries.entrySet()) {
+                        entry.getValue().executeBatch();
                         entry.getValue().getStatement().close();
+                    }
                     DB.connection.close();
 
                 } catch (SQLException e) {
