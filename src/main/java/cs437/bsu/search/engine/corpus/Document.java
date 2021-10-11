@@ -10,6 +10,7 @@ import edu.stanford.nlp.pipeline.CoreDocument;
 import org.slf4j.Logger;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,6 +66,7 @@ public class Document {
             tokens = s.getDocTokens(doc, s::removeStopwords, s::removeIllegalPatterns, s::removeLongShortTokens);
 
             LOGGER.trace("Token cleaning complete.");
+            LOGGER.info("Tokens found in Document: {}", tokens.size());
         }, () -> {parsedData = true;});
     }
 

@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -105,7 +106,8 @@ public class Scanner {
 
     public CoreDocument scan(StringBuilder sb){
         LOGGER.info("Converting document to a CoreDocument.");
-        return pipeline.processToCoreDocument(sb.toString());
+        String doc = new String(sb.toString().getBytes(), StandardCharsets.US_ASCII).replace((char) 65533, '~');
+        return pipeline.processToCoreDocument(doc);
     }
 
     public Map<String, Token> getDocTokens(CoreDocument document, Consumer<Map<String, Token>> ... cleaningMethods){

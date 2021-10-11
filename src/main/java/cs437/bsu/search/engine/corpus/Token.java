@@ -25,7 +25,7 @@ public class Token {
 
         long hashvalue = computeHash(token);
 
-        LOGGER.debug("Uploading data: DocId={},token={},hashValue={},frequency={}", docId, token, hashvalue, frequency);
+        LOGGER.trace("Uploading data: DocId={},token={},hashValue={},frequency={}", docId, token, hashvalue, frequency);
         qb.set(1, docId);
         qb.set(2, token);
         qb.set(3, hashvalue);
