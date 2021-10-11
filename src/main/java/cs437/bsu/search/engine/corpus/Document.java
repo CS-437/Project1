@@ -1,17 +1,14 @@
 package cs437.bsu.search.engine.corpus;
 
-import cs437.bsu.search.engine.database.Database;
-import cs437.bsu.search.engine.database.QueryBatch;
-import cs437.bsu.search.engine.database.QueryType;
+import cs437.bsu.search.engine.database.DMLCreator;
 import cs437.bsu.search.engine.util.LoggerInitializer;
-import cs437.bsu.search.engine.util.PathRelavizor;
 import cs437.bsu.search.engine.util.TaskExecutor;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import org.slf4j.Logger;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class Document {
@@ -74,24 +71,26 @@ public class Document {
         return parsedData;
     }
 
-    public void saveData() {
-        LOGGER.debug("Starting upload of Document data to database: {}", id);
-        Database db = Database.getInstance();
+    public void saveData(boolean lastDoc) {
+        LOGGER.debug("Adding Document to DML: {}", id);
+        DMLCreator.getInstance().saveDocumentData(this, lastDoc);
 
-        LOGGER.debug("Uploading data: id={},title={},path={}", id, title, file.getPath().toString());
-        QueryBatch q = db.getQuery(QueryType.AddDocument);
-        q.set(1, id);
-        q.set(2, title);
-        q.set(3, PathRelavizor.getRelativeLocation(file));
-        q.addBatch();
-
-        QueryBatch tokenQuery = db.getQuery(QueryType.AddToken);
-        for(Token t : tokens.values())
-            t.saveData(id, tokenQuery);
-
-        if(q.getBatchSize() >= 20){
-            q.executeBatch();
-            tokenQuery.executeBatch();
+        Iterator<Token> it = tokens.values().iterator();
+        while (it.hasNext()) {
+            Token t = it.next();
+            t.saveData(id, lastDoc && !it.hasNext());
         }
+    }
+
+    public File getFile() {
+        return file;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public int getId() {
+        return id;
     }
 }

@@ -1,6 +1,6 @@
 package cs437.bsu.search.engine.corpus;
 
-import cs437.bsu.search.engine.database.QueryBatch;
+import cs437.bsu.search.engine.database.DMLCreator;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import org.slf4j.Logger;
 
@@ -20,20 +20,12 @@ public class Token {
         frequency++;
     }
 
-    public void saveData(int docId, QueryBatch qb) {
-        LOGGER.debug("Starting upload of Token to database. DocId={},Token={}", docId, token);
-
-        long hashvalue = computeHash(token);
-
-        LOGGER.trace("Uploading data: DocId={},token={},hashValue={},frequency={}", docId, token, hashvalue, frequency);
-        qb.set(1, docId);
-        qb.set(2, token);
-        qb.set(3, hashvalue);
-        qb.set(4, frequency);
-        qb.addBatch();
+    public void saveData(int docId, boolean lastToken) {
+        LOGGER.debug("Adding Token to DML. DocID={},Token={}", docId, token);
+        DMLCreator.getInstance().saveTokenData(docId, this, lastToken);
     }
 
-    private static long computeHash(String token) {
+    public long getHashValue() {
         long h = 1125899906842597L; // prime
         int len = token.length();
 
@@ -48,5 +40,13 @@ public class Token {
         // Create bound
         h %= 2147483647;
         return h;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public int getFrequency() {
+        return frequency;
     }
 }

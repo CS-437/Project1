@@ -48,7 +48,7 @@ public class Saver extends Thread {
             while(!documents.isEmpty()){
                 Document doc = documents.poll();
                 if(doc.readyToSaveData()) {
-                    doc.saveData();
+                    doc.saveData(!keepRunning && documents.isEmpty());
                     LOGGER.debug("Attempting to load Document data into database: {}", doc.getDocumentPath());
                 }else {
                     documents.add(doc);
