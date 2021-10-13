@@ -10,10 +10,12 @@ public class Token {
 
     private String token;
     private int frequency;
+    private long hash;
 
     protected Token(String token) {
         this.token = token;
         this.frequency = 1;
+        hash = getHashValue(token);
     }
 
     protected void incrementFrequency(){
@@ -25,13 +27,13 @@ public class Token {
         DMLCreator.getInstance().saveTokenData(docId, this, lastToken);
     }
 
-    public long getHashValue() {
+    public static long getHashValue(String s) {
         long h = 1125899906842597L; // prime
-        int len = token.length();
+        int len = s.length();
 
         // Compute Hash
         for (int i = 0; i < len; i++)
-            h = 31 * h + token.charAt(i);
+            h = 31 * h + s.charAt(i);
 
         // Make it positive
         if (h < -1)
@@ -48,5 +50,9 @@ public class Token {
 
     public int getFrequency() {
         return frequency;
+    }
+
+    public long getHash() {
+        return hash;
     }
 }

@@ -1,6 +1,7 @@
 package cs437.bsu.search.engine.corpus.create;
 
 import cs437.bsu.search.engine.corpus.Document;
+import cs437.bsu.search.engine.entry.Run;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import org.slf4j.Logger;
 
@@ -55,7 +56,7 @@ public class Saver extends Thread {
                 }
             }
         }
-
+        
         LOGGER.info("Saver terminating ...");
     }
 }

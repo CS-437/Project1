@@ -20,6 +20,7 @@ public class Scanner {
 
     private static Scanner INSTANCE;
     private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Scanner.class);
+    private static final String DICTIONARY_RES = "dictionary.txt";
 
     public synchronized static Scanner getInstance(){
         if(INSTANCE == null)
@@ -58,6 +59,7 @@ public class Scanner {
 
     private StanfordCoreNLP pipeline;
     private Set<String> stopwords;
+    private Map<Long, Set<String>> dictionary;
     private Pattern pattern;
     private long preprocessingSize;
     private long postprocessingSize;
@@ -74,6 +76,7 @@ public class Scanner {
             stopwords.addAll(sl.loadStopwords());
 
         this.pattern = loadPatterns();
+        this.dictionary = loadDictionary();
 
         this.preprocessingSize = 0;
         this.postprocessingSize = 0;
@@ -102,6 +105,29 @@ public class Scanner {
             globalPattern += String.format("(%s)", pattern);
         }
         return Pattern.compile(globalPattern);
+    }
+
+    private Map<Long, Set<String>> loadDictionary(){
+        LOGGER.info("Loading Dictionary Words.");
+        Map<Long, Set<String>> dic = new HashMap<>();
+
+        InputStream resource = Scanner.class.getResourceAsStream(DICTIONARY_RES);
+        try(BufferedReader br = new BufferedReader(new InputStreamReader(resource))){
+            String line;
+            while((line = br.readLine()) != null){
+                long hash = Token.getHashValue(line);
+                Set<String> sameHash = dic.get(hash);
+                if(sameHash == null){
+                    sameHash = new HashSet<>();
+                    dic.put(hash, sameHash);
+                }
+                sameHash.add(line);
+            }
+        }catch (Exception e){
+            LOGGER.error("Failed to load dictionary terms.", e);
+        }
+
+        return dic;
     }
 
     public CoreDocument scan(StringBuilder sb){
@@ -145,31 +171,40 @@ public class Scanner {
 
     public void removeStopwords(Map<String, Token> tokens){
         LOGGER.debug("Cleaning Tokens of stopwords.");
-        removeTokens(tokens,  (String token) -> {
-            return stopwords.contains(token);
+        removeTokens(tokens,  (Token token) -> {
+            return stopwords.contains(token.getToken());
+        });
+    }
+    public void removeNonDictionaryTerms(Map<String, Token> tokens){
+        LOGGER.debug("Cleaning Tokens of Non-Dictionary Terms.");
+        removeTokens(tokens,  (Token token) -> {
+            Set<String> hashTokens = dictionary.get(token.getHash());
+            if(hashTokens == null)
+                return false;
+            return !hashTokens.contains(token.getToken());
         });
     }
 
     public void removeIllegalPatterns(Map<String, Token> tokens){
         LOGGER.debug("Cleaning Tokens of illegal patterns.");
-        removeTokens(tokens,  (String token) -> {
-            return pattern.matcher(token).matches();
+        removeTokens(tokens,  (Token token) -> {
+            return pattern.matcher(token.getToken()).matches();
         });
     }
 
     public void removeLongShortTokens(Map<String, Token> tokens){
         LOGGER.debug("Removing Tokens longer than 45 characters and shorter than 3.");
-        removeTokens(tokens,  (String token) -> {
-            int length = token.length();
+        removeTokens(tokens,  (Token token) -> {
+            int length = token.getToken().length();
             return  length < 3 || 45 < length;
         });
     }
 
-    private void removeTokens(Map<String, Token> tokens, Function<String, Boolean> tokenChecker){
+    private void removeTokens(Map<String, Token> tokens, Function<Token, Boolean> tokenChecker){
         Iterator<Map.Entry<String, Token>> it = tokens.entrySet().iterator();
         while(it.hasNext()){
             Map.Entry<String, Token> entry = it.next();
-            if (tokenChecker.apply(entry.getKey())) {
+            if (tokenChecker.apply(entry.getValue())) {
                 LOGGER.debug("Removing useless token: {}", entry.getKey());
                 it.remove();
             }

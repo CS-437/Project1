@@ -27,32 +27,32 @@ public class DMLCreator {
     private static DMLCreator INSTANCE;
     private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(DMLCreator.class);
 
-    public static DMLCreator getInstance(){
-        if(INSTANCE == null)
+    public static DMLCreator getInstance() {
+        if (INSTANCE == null)
             INSTANCE = new DMLCreator();
         return INSTANCE;
     }
 
-    public enum DMLType{
+    public enum DMLType {
         Document(
                 "dml_documents",
-                "Replace into Documents (DocumentID,Title,Path) VALUES ",
-                "%n(%d, \"%s\", \"%s\")"),
+                "Replace into Documents (DocumentID,HighestTermFreq,Title,Path) VALUES ",
+                "%n(%d,%d,\"%s\",\"%s\")"),
         Token(
                 "dml_tokens",
                 "Replace into Tokens (TokenPK,Token,HashValue) VALUES ",
-                "%n(%d, \"%s\", %d)"),
+                "%n(%d,\"%s\",%d)"),
 
-        Intersection (
+        Intersection(
                 "dml_intersection",
                 "Replace into Intersection (TokenFK,DocumentID,Frequency) VALUES ",
-                "%n(%d, %d, %d)");
+                "%n(%d,%d,%d)");
 
         private String fileName;
         private String replaceCommand;
         private String dmlRowFmt;
 
-        private DMLType(String fileName, String replaceCommand, String dmlRowFmt){
+        private DMLType(String fileName, String replaceCommand, String dmlRowFmt) {
             this.fileName = fileName;
             this.replaceCommand = replaceCommand;
             this.dmlRowFmt = dmlRowFmt;
@@ -62,24 +62,25 @@ public class DMLCreator {
     private Map<Long, Pair<List<String>, List<Long>>> tokens;
     private Map<DMLType, Triple<File, BufferedWriter, Integer>> dmlWriterMap;
 
-    private DMLCreator(){
+    private DMLCreator() {
         tokens = new HashMap<>();
         dmlWriterMap = new HashMap<>();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            for(Triple<File, BufferedWriter, Integer> file : dmlWriterMap.values()){
+            for (Triple<File, BufferedWriter, Integer> file : dmlWriterMap.values()) {
                 try {
-                    if(file != null) {
+                    if (file != null) {
                         file.b.close();
                     }
-                }catch (Exception e){
+                } catch (Exception e) {
                     LOGGER.error("Failed to close DML Writer.", e);
                 }
             }
 
             try {
                 Thread.sleep(1000);
-            }catch (InterruptedException e){}
+            } catch (InterruptedException e) {
+            }
         }));
 
         try {
@@ -87,24 +88,24 @@ public class DMLCreator {
                 File f = new File(type.fileName + "-1" + DML_EXTENSION);
                 dmlWriterMap.put(type, new Triple<>(f, new BufferedWriter(new FileWriter(f)), 1));
             }
-        }catch (IOException e){
+        } catch (IOException e) {
             LOGGER.error("Failed to setup writer for one or more DML(s).", e);
             System.exit(-1);
         }
     }
 
-    public void saveDocumentData(Document doc, boolean lastDoc){
-        saveData(DMLType.Document, lastDoc, doc.getId(), doc.getTitle(), PathRelavizor.getRelativeLocation(doc.getFile()));
+    public void saveDocumentData(int highestFreq, Document doc, boolean lastDoc) {
+        saveData(DMLType.Document, lastDoc, doc.getId(), highestFreq, doc.getTitle(), PathRelavizor.getRelativeLocation(doc.getFile()).replace("\\", "\\\\"));
     }
 
-    public void saveTokenData(int docId, Token token, boolean lastToken){
+    public void saveTokenData(int docId, Token token, boolean lastToken) {
         long tokenPk = -1;
         boolean newToken;
 
-        long tokenHash = token.getHashValue();
         String tkn = token.getToken();
+        long tokenHash = token.getHash();
         Pair<List<String>, List<Long>> pair = tokens.get(tokenHash);
-        if(newToken = (pair == null)){
+        if (newToken = (pair == null)) {
             pair = new Pair<>(new ArrayList<>(), new ArrayList<>());
             pair.a.add(tkn);
             tokenPk = CURR_TOKEN_PK++;
@@ -112,45 +113,46 @@ public class DMLCreator {
             tokens.put(tokenHash, pair);
         }
 
-        if(!newToken){
+        if (!newToken) {
             int index = pair.a.indexOf(tkn);
-            if(newToken = (index == -1)){
+            if (index == -1) {
                 pair.a.add(tkn);
                 tokenPk = CURR_TOKEN_PK++;
                 pair.b.add(tokenPk);
-            }else{
+            } else {
                 tokenPk = pair.b.get(index);
             }
         }
 
-        if(newToken)
+        if (newToken)
             saveData(DMLType.Token, lastToken, tokenPk, tkn, tokenHash);
 
-        saveData(DMLType.Intersection, lastToken, tokenPk, docId, token.getFrequency());
+        if (tokenPk > 0)
+            saveData(DMLType.Intersection, lastToken, tokenPk, docId, token.getFrequency());
     }
 
-    private void saveData(DMLType type, boolean lastItem, Object ... data){
+    private void saveData(DMLType type, boolean lastItem, Object... data) {
         Triple<File, BufferedWriter, Integer> fileData = dmlWriterMap.get(type);
 
-        try{
-            if(fileData.c == 1)
+        try {
+            if (fileData.c == 1)
                 fileData.b.write(type.replaceCommand);
 
             fileData.b.write(String.format(type.dmlRowFmt, data));
 
-            if(lastItem)
+            if (lastItem)
                 fileData.b.write(";");
-        }catch (IOException e){
+        } catch (IOException e) {
             LOGGER.atError().setCause(e).log("Failed to add row for type: {}", type);
         }
 
-        if(!lastItem)
+        if (!lastItem)
             updateFile(type, fileData);
     }
 
-    private void updateFile(DMLType type, Triple<File, BufferedWriter, Integer> fileData){
-        try{
-            if(fileData.a.length() >= MAX_DML_SIZE){
+    private void updateFile(DMLType type, Triple<File, BufferedWriter, Integer> fileData) {
+        try {
+            if (fileData.a.length() >= MAX_DML_SIZE) {
                 fileData.b.write(";");
                 fileData.b.close();
                 String oldFileName = fileData.a.getName();
@@ -158,17 +160,17 @@ public class DMLCreator {
                 fileData.a = new File(type.fileName + "-" + num + DML_EXTENSION);
                 fileData.b = new BufferedWriter(new FileWriter(fileData.a));
                 fileData.c = 1;
-            }else{
-                if(fileData.c == REPLACE_MAX_ROWS) {
+            } else {
+                if (fileData.c == REPLACE_MAX_ROWS) {
                     fileData.b.write(";");
                     fileData.b.newLine();
                     fileData.c = 1;
-                }else{
+                } else {
                     fileData.b.write(",");
-                    fileData.c ++;
+                    fileData.c++;
                 }
             }
-        }catch (IOException e){
+        } catch (IOException e) {
             LOGGER.atError().setCause(e).log("Issue occurred with updating file: {}", fileData.a.getAbsolutePath());
         }
     }
