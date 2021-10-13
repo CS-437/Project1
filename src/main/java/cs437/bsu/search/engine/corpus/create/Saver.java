@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Saver extends Thread {
 
-    private static final int NUM_OPEN_PARSING_DOCS = 1000;
+    private static final int NUM_OPEN_PARSING_DOCS = 100;
     private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Saver.class);
 
     private Queue<Document> documents;
