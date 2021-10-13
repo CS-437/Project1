@@ -46,6 +46,7 @@ public class Document {
                             title = title.substring(0, 116) + " ...";
 
                         LOGGER.trace("Found title to document. Title={},Document={}", title, id);
+                        sb.append(line + " ");
                     }else if(i > 1) {
                         sb.append(line + " ");
                     }

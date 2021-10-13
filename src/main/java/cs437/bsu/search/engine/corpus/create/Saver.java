@@ -56,7 +56,7 @@ public class Saver extends Thread {
                 }
             }
         }
-        
+
         LOGGER.info("Saver terminating ...");
     }
 }

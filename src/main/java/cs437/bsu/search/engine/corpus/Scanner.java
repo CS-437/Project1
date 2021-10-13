@@ -180,7 +180,7 @@ public class Scanner {
         removeTokens(tokens,  (Token token) -> {
             Set<String> hashTokens = dictionary.get(token.getHash());
             if(hashTokens == null)
-                return false;
+                return true;
             return !hashTokens.contains(token.getToken());
         });
     }
