@@ -50,16 +50,8 @@ public class ArgumentParser {
         }
     }
 
-    public File getIndexDirectory(){
+    public File getDirectory(){
         return dir;
-    }
-
-    public boolean checkForMandatoryProperties(){
-        boolean mandatoryPropsExist = System.getProperties().get("database.credential.username") != null;
-        mandatoryPropsExist &= System.getProperties().get("database.credential.password") != null;
-        mandatoryPropsExist &= System.getProperties().get("database.connection.address") != null;
-        mandatoryPropsExist &= System.getProperties().get("database.connection.port") != null;
-        return mandatoryPropsExist;
     }
 
     private int loadApplication(int loc, String[] args){
@@ -87,7 +79,7 @@ public class ArgumentParser {
             case CreateIndex:
                 loc++;
                 if(checkLength(loc, args)){
-                    errorRsn = "No directory to index was provided.";
+                    errorRsn = "No directory to corpus was provided.";
                     return -1;
                 }
 
@@ -98,7 +90,17 @@ public class ArgumentParser {
                 }
                 break;
             default:
-                //TODO: If we add args to SearchIndex we need to account for that hear
+                loc++;
+                if(checkLength(loc, args)){
+                    errorRsn = "No directory to index was provided.";
+                    return -1;
+                }
+
+                dir = new File(args[loc]);
+                if(!dir.exists() || !dir.isDirectory()){
+                    validArgs = false;
+                    errorRsn = String.format("Invalid index directory provided: %s", args[loc]);
+                }
                 break;
         }
 

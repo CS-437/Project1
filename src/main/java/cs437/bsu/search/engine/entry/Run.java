@@ -2,6 +2,8 @@ package cs437.bsu.search.engine.entry;
 
 import cs437.bsu.search.engine.corpus.Scanner;
 import cs437.bsu.search.engine.corpus.create.Indexer;
+import cs437.bsu.search.engine.index.IndexLoader;
+import cs437.bsu.search.engine.query.SearchEngine;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import org.slf4j.Logger;
 
@@ -14,20 +16,14 @@ public class Run {
 
     public static void main(String[] args) {
         ArgumentParser ap = new ArgumentParser(args);
-
          LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Run.class);
-
-        if(!ap.checkForMandatoryProperties()){
-            System.err.println("One or more Mandatory System Properties are missing.");
-            System.exit(-1);
-        }
 
         switch (ArgumentParser.application) {
             case CreateIndex:
-                createIndex(ap.getIndexDirectory());
+                createIndex(ap.getDirectory());
                 break;
             default:
-                searchEngine();
+                searchEngine(ap.getDirectory());
                 break;
         }
     }
@@ -58,8 +54,30 @@ public class Run {
         }));
     }
 
-    private static void searchEngine(){
+    private static void searchEngine(File dir){
         LOGGER.info("Starting Search Engine ...");
+        IndexLoader il = IndexLoader.getInstance();
+        il.loadIndex(dir);
+
+        System.out.print("Loading Index ");
+        while(!il.isFinishedLoading()){
+            for(int i = 0; i < 3; i++){
+                System.out.print(".");
+                sleep(750);
+            }
+            System.out.print("\b\b\b");
+            sleep(750);
+        }
+        System.out.println();
+
+        LOGGER.info("Index loaded. Starting Search Engine.");
+        new SearchEngine().start();
+    }
+
+    private static void sleep(long length){
+        try {
+            Thread.sleep(length);
+        }catch (Exception e){}
     }
 
     private static String getTimeLength(long duration){

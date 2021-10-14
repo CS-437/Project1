@@ -1,4 +1,4 @@
-package cs437.bsu.search.engine.database;
+package cs437.bsu.search.engine.index;
 
 import cs437.bsu.search.engine.container.Pair;
 import cs437.bsu.search.engine.container.Triple;
@@ -17,19 +17,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DMLCreator {
+public class IndexCreator {
 
     private static long CURR_TOKEN_PK = 1;
     private static long REPLACE_MAX_ROWS = 10_000;
     private static long MAX_DML_SIZE = 900 * (long) Math.pow(1024, 2);
     private static String DML_EXTENSION = ".sql";
 
-    private static DMLCreator INSTANCE;
-    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(DMLCreator.class);
+    private static IndexCreator INSTANCE;
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(IndexCreator.class);
 
-    public static DMLCreator getInstance() {
+    public static IndexCreator getInstance() {
         if (INSTANCE == null)
-            INSTANCE = new DMLCreator();
+            INSTANCE = new IndexCreator();
         return INSTANCE;
     }
 
@@ -59,10 +59,10 @@ public class DMLCreator {
         }
     }
 
-    private Map<Long, Pair<List<String>, List<Long>>> tokens;
+    private Map<Long, Map<String, Long>> tokens;
     private Map<DMLType, Triple<File, BufferedWriter, Integer>> dmlWriterMap;
 
-    private DMLCreator() {
+    private IndexCreator() {
         tokens = new HashMap<>();
         dmlWriterMap = new HashMap<>();
 
@@ -98,37 +98,32 @@ public class DMLCreator {
         saveData(DMLType.Document, lastDoc, doc.getId(), highestFreq, doc.getTitle(), PathRelavizor.getRelativeLocation(doc.getFile()).replace("\\", "\\\\"));
     }
 
-    public void saveTokenData(int docId, Token token, boolean lastToken) {
+    public synchronized void saveTokenData(int docId, Token token, boolean lastToken) {
         long tokenPk = -1;
         boolean newToken;
 
         String tkn = token.getToken();
         long tokenHash = token.getHash();
-        Pair<List<String>, List<Long>> pair = tokens.get(tokenHash);
-        if (newToken = (pair == null)) {
-            pair = new Pair<>(new ArrayList<>(), new ArrayList<>());
-            pair.a.add(tkn);
+        Map<String, Long> hashValueMap = tokens.get(tokenHash);
+        if (newToken = (hashValueMap == null)) {
+            hashValueMap = new HashMap<>();
             tokenPk = CURR_TOKEN_PK++;
-            pair.b.add(tokenPk);
-            tokens.put(tokenHash, pair);
-        }
-
-        if (!newToken) {
-            int index = pair.a.indexOf(tkn);
-            if (index == -1) {
-                pair.a.add(tkn);
+            hashValueMap.put(tkn, tokenPk);
+            tokens.put(tokenHash, hashValueMap);
+        }else{
+            Long pk = hashValueMap.get(tkn);
+            if (newToken = (pk == null)) {
                 tokenPk = CURR_TOKEN_PK++;
-                pair.b.add(tokenPk);
+                hashValueMap.put(tkn, tokenPk);
             } else {
-                tokenPk = pair.b.get(index);
+                tokenPk = pk;
             }
         }
 
         if (newToken)
             saveData(DMLType.Token, lastToken, tokenPk, tkn, tokenHash);
 
-        if (tokenPk > 0)
-            saveData(DMLType.Intersection, lastToken, tokenPk, docId, token.getFrequency());
+        saveData(DMLType.Intersection, lastToken, tokenPk, docId, token.getFrequency());
     }
 
     private void saveData(DMLType type, boolean lastItem, Object... data) {

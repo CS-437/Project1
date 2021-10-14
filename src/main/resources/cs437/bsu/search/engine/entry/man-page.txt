@@ -40,7 +40,8 @@ is lax, upper case vs lower case doesn't matter.
 
             Type: SearchEngine, args: dir
                 When providing this as the type upon execution of the jar prompts will be provided
-                for the user to utilize created reverse index to search a corpus.
+                for the user to utilize created reverse index to search a corpus. The directory will
+                be the directory housing the SQL files containing the index.
 
 SYSTEM PROPERTIES
 
