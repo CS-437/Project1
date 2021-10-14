@@ -1,6 +1,7 @@
 package cs437.bsu.search.engine.corpus.create;
 
 import cs437.bsu.search.engine.corpus.Document;
+import cs437.bsu.search.engine.entry.Run;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import org.slf4j.Logger;
 
@@ -9,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Saver extends Thread {
 
-    private static final int NUM_OPEN_PARSING_DOCS = 1000;
+    private static final int NUM_OPEN_PARSING_DOCS = 100;
     private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Saver.class);
 
     private Queue<Document> documents;
@@ -48,7 +49,7 @@ public class Saver extends Thread {
             while(!documents.isEmpty()){
                 Document doc = documents.poll();
                 if(doc.readyToSaveData()) {
-                    doc.saveData();
+                    doc.saveData(!keepRunning && documents.isEmpty());
                     LOGGER.debug("Attempting to load Document data into database: {}", doc.getDocumentPath());
                 }else {
                     documents.add(doc);

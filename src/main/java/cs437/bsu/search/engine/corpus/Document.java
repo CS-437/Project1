@@ -1,24 +1,19 @@
 package cs437.bsu.search.engine.corpus;
 
-import cs437.bsu.search.engine.database.Database;
-import cs437.bsu.search.engine.database.QueryBatch;
-import cs437.bsu.search.engine.database.QueryType;
+import cs437.bsu.search.engine.database.DMLCreator;
 import cs437.bsu.search.engine.util.LoggerInitializer;
-import cs437.bsu.search.engine.util.PathRelavizor;
 import cs437.bsu.search.engine.util.TaskExecutor;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import org.slf4j.Logger;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Document {
 
     private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Document.class);
 
-    private Map<String, Token> tokens;
+    private Collection<Token> tokens;
     private File file;
     private String title;
     private int id;
@@ -26,7 +21,6 @@ public class Document {
 
     public Document(File f){
         this.file = f;
-        this.tokens = new HashMap<>();
         this.parsedData = false;
 
         String fileName = f.getName();
@@ -48,7 +42,11 @@ public class Document {
                 for(int i = 0; (line = br.readLine()) != null; i++){
                     if(i == 0) {
                         title = line.substring(7);
+                        if(title.length() > 120)
+                            title = title.substring(0, 116) + " ...";
+
                         LOGGER.trace("Found title to document. Title={},Document={}", title, id);
+                        sb.append(line + " ");
                     }else if(i > 1) {
                         sb.append(line + " ");
                     }
@@ -63,7 +61,7 @@ public class Document {
             CoreDocument doc = s.scan(sb);
 
             LOGGER.trace("Deeper scan complete. Starting token cleaning.");
-            tokens = s.getDocTokens(doc, s::removeStopwords, s::removeIllegalPatterns, s::removeLongShortTokens);
+            tokens = s.getDocTokens(doc, s::removeStopwords, s::removeNonDictionaryTerms, s::removeIllegalPatterns, s::removeLongShortTokens).values();
 
             LOGGER.trace("Token cleaning complete.");
             LOGGER.info("Tokens found in Document: {}", tokens.size());
@@ -74,24 +72,31 @@ public class Document {
         return parsedData;
     }
 
-    public void saveData() {
-        LOGGER.debug("Starting upload of Document data to database: {}", id);
-        Database db = Database.getInstance();
+    public void saveData(boolean lastDoc) {
+        LOGGER.debug("Adding Document to DML: {}", id);
 
-        LOGGER.debug("Uploading data: id={},title={},path={}", id, title, file.getPath().toString());
-        QueryBatch q = db.getQuery(QueryType.AddDocument);
-        q.set(1, id);
-        q.set(2, title);
-        q.set(3, PathRelavizor.getRelativeLocation(file));
-        q.addBatch();
-
-        QueryBatch tokenQuery = db.getQuery(QueryType.AddToken);
-        for(Token t : tokens.values())
-            t.saveData(id, tokenQuery);
-
-        if(q.getBatchSize() >= 20){
-            q.executeBatch();
-            tokenQuery.executeBatch();
+        int largestFreq = 0;
+        Iterator<Token> it = tokens.iterator();
+        while (it.hasNext()) {
+            Token t = it.next();
+            if(t.getFrequency() > largestFreq)
+                largestFreq = t.getFrequency();
+            t.saveData(id, lastDoc && !it.hasNext());
         }
+
+        if(largestFreq > 0)
+            DMLCreator.getInstance().saveDocumentData(largestFreq, this, lastDoc);
+    }
+
+    public File getFile() {
+        return file;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public int getId() {
+        return id;
     }
 }

@@ -38,7 +38,7 @@ is lax, upper case vs lower case doesn't matter.
                When providing this as the type upon execution of the jar an inverse index will be
                setup on a database. This requires providing the directory to index all the files for.
 
-            Type: SearchEngine, args: N/A
+            Type: SearchEngine, args: dir
                 When providing this as the type upon execution of the jar prompts will be provided
                 for the user to utilize created reverse index to search a corpus.
 
@@ -95,17 +95,3 @@ SYSTEM PROPERTIES
 
         - org.slf4j.simpleLogger.warnLevelString: (Optional) (Type: CreateIndex, SearchEngine)
             The string value output for the warn level. Defaults to WARN.
-
-    DATABASE
-
-        - database.credential.username: (Mandatory) (Type: CreateIndex, SearchEngine)
-            The username of the database to connect to. Must be clear text.
-
-        - database.credential.password: (Mandatory) (Type: CreateIndex, SearchEngine)
-            The password of the database to connect to associated to the username. Must be clear text.
-
-        - database.connection.address: (Mandatory) (Type: CreateIndex, SearchEngine)
-            The IP or Host Address of the database to communicate with.
-
-        - database.connection.port: (Mandatory) (Type: CreateIndex, SearchEngine)
-            The port to communicate over between this machine and the database.
