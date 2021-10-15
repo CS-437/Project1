@@ -39,6 +39,16 @@ public class IndexLoader {
     public boolean isFinishedLoading(){
         return finishedLoading;
     }
+    
+    public Doc getDocById(int id){
+        return idDocMap.get(id);
+    }
+
+    public Term getTermByHashToken(int hash, String s){
+        Map<String, Term> sameHashValues = hashTokenMap.get(hash);
+        if(sameHashValues != null)
+            return sameHashValues.get(s);
+    }
 
     public void loadIndex(File dir){
         LOGGER.info("Loading index from: {}", dir.getAbsolutePath());
@@ -91,6 +101,16 @@ public class IndexLoader {
             LOGGER.info("Index loading complete.");
             LOGGER.info("Loaded {} Tokens, {} Documents, and {} Intersections.", tokensLoaded, idDocMap.size(), intersectionsLoaded);
             this.finishedLoading = true;
+        });
+    }
+
+    public void loadQueryLogs (File aolDir) {
+
+        LOGGER.info("Loading query logs from: {}", aolDir.getAbsolutePath());
+
+//        Pattern sqlFilePattern = Pattern.compile("^.*\\.sql$");
+        File[] files = aolDir.listFiles((File directory, String name) -> {
+
         });
     }
 

@@ -1,5 +1,6 @@
 package cs437.bsu.search.engine.index;
 
+import java.util.Set;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,7 +10,7 @@ public class Term implements Comparable<Term> {
     private long hashValue;
     private Map<Integer, Integer> docFrequencies;
 
-    protected Term(String token, long hashValue){
+    public Term(String token, long hashValue){
         this.token = token;
         this.hashValue = hashValue;
         docFrequencies = new HashMap<>();
@@ -25,6 +26,10 @@ public class Term implements Comparable<Term> {
 
     public long getHashValue() {
         return hashValue;
+    }
+
+    public Set<Integer> getDocs(){
+        return docFrequencies.keySet();
     }
 
     @Override

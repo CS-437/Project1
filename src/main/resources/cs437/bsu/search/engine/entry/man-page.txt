@@ -34,14 +34,17 @@ is lax, upper case vs lower case doesn't matter.
         This Defines what the application will be doing on the current run. There are currently
         two modes:
 
-            Type: CreateIndex, args: dir
+            Type: CreateIndex, args: indexDir
                When providing this as the type upon execution of the jar an inverse index will be
                setup on a database. This requires providing the directory to index all the files for.
 
-            Type: SearchEngine, args: dir
+            Type: SearchEngine, args: indexDir aolDir
                 When providing this as the type upon execution of the jar prompts will be provided
-                for the user to utilize created reverse index to search a corpus. The directory will
-                be the directory housing the SQL files containing the index.
+                for the user to utilize created reverse index to search a corpus. The first directory
+                labeled indexDir will be the directory that houses the text the files that will be
+                scanned to create the index. The second directory labeled aolDir will be the directory
+                that houses the text files that will be scanned to create the query suggestions based
+                on similar user queries performed by users in the AOL log files.
 
 SYSTEM PROPERTIES
 

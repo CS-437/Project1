@@ -16,6 +16,7 @@ public class ArgumentParser {
     private boolean validArgs;
     private String errorRsn;
     private File dir;
+    private File aolDir;
 
     public ArgumentParser(String[] args){
         validArgs = true;
@@ -53,6 +54,7 @@ public class ArgumentParser {
     public File getDirectory(){
         return dir;
     }
+    public File getAolDir() { return aolDir; }
 
     private int loadApplication(int loc, String[] args){
         loc++;
@@ -90,6 +92,7 @@ public class ArgumentParser {
                 }
                 break;
             default:
+                //INDEX
                 loc++;
                 if(checkLength(loc, args)){
                     errorRsn = "No directory to index was provided.";
@@ -101,6 +104,21 @@ public class ArgumentParser {
                     validArgs = false;
                     errorRsn = String.format("Invalid index directory provided: %s", args[loc]);
                 }
+
+
+                //AOL
+                loc++;
+                if(checkLength(loc, args)){
+                    errorRsn = "No directory to aol query logs was provided.";
+                    return -1;
+                }
+
+                aolDir = new File(args[loc]);
+                if(!aolDir.exists() || !aolDir.isDirectory()){
+                    validArgs = false;
+                    errorRsn = String.format("Invalid aol query log directory provided: %s", args[loc]);
+                }
+
                 break;
         }
 

@@ -1,5 +1,7 @@
 package cs437.bsu.search.engine.index;
 
+import java.io.File;
+
 public class Doc {
 
     private String title;
@@ -12,4 +14,11 @@ public class Doc {
         this.highestTokenFreq = highestTokenFreq;
     }
 
+    public String getTitle(){
+        return title;
+    }
+
+    public File getDocFile(){
+        return new File(path);
+    }
 }
