@@ -44,10 +44,15 @@ public class IndexLoader {
         return idDocMap.get(id);
     }
 
-    public Term getTermByHashToken(int hash, String s){
+    public int getNumDocs(){
+        return idDocMap.size();
+    }
+
+    public Term getTermByHashToken(long hash, String s){
         Map<String, Term> sameHashValues = hashTokenMap.get(hash);
         if(sameHashValues != null)
             return sameHashValues.get(s);
+        return null;
     }
 
     public void loadIndex(File dir){
@@ -109,9 +114,9 @@ public class IndexLoader {
         LOGGER.info("Loading query logs from: {}", aolDir.getAbsolutePath());
 
 //        Pattern sqlFilePattern = Pattern.compile("^.*\\.sql$");
-        File[] files = aolDir.listFiles((File directory, String name) -> {
-
-        });
+//        File[] files = aolDir.listFiles((File directory, String name) -> {
+//
+//        });
     }
 
     private void transitionTokenMap(){
@@ -235,7 +240,8 @@ public class IndexLoader {
                     }
                 }
 
-                idDocMap.put(Integer.parseInt(id), new Doc(title, path, Integer.parseInt(highFreqTerm)));
+                int docId = Integer.parseInt(id);
+                idDocMap.put(docId, new Doc(docId, title, path, Integer.parseInt(highFreqTerm)));
                 LOGGER.trace("Loading Document. ID={},Title={},Path={},HighTermFreq={}", id, title, path, highFreqTerm);
             }
         };

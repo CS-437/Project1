@@ -9,6 +9,7 @@ import cs437.bsu.search.engine.index.Doc;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import cs437.bsu.search.engine.util.TaskExecutor;
 import edu.stanford.nlp.pipeline.CoreDocument;
+import org.apache.lucene.search.Sort;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -51,7 +52,6 @@ public class SearchEngine extends Thread {
             }
 
             processQuery(query);
-            clearScreen();
         }
         System.out.println("Exiting Search Engine.");
         LOGGER.info("Closing Search Engine.");
@@ -64,20 +64,26 @@ public class SearchEngine extends Thread {
 
     private void processQuery(String query){
         LOGGER.info("Processing Query: {}", query);
-        List<Pair<String, Term>> tokens = getQueryTokens(query);
-        Set<Integer> relevantDocIds = getRelevantDocIds(tokens);
-        Set<Doc> docs = getDocuments(relevantDocIds);
-        TaskExecutor.sleep(750);
+        List<Term> tokens = getQueryTokens(query);
+
+        if(!tokens.isEmpty()) {
+            Set<Integer> relevantDocIds = getRelevantDocIds(tokens);
+            Set<Doc> docs = getDocuments(relevantDocIds);
+            List<Doc> top5Docs = rankDocs(docs, tokens);
+            printDocuments(top5Docs);
+        }else{
+            System.out.printf("%n\tYour Query '%s' didn't match any of the documents.%n%n%n", query);
+        }
     }
 
-    private List<Pair<String, Term>> getQueryTokens(String query){
+    private List<Term> getQueryTokens(String query){
         LOGGER.debug("Getting tokens from query.");
         TextScanner ts = TextScanner.getInstance();
         CoreDocument doc = ts.scan(query);
         Collection<Token> tokens = ts.getDocTokens(doc, ts::removeStopwords, ts::removeNonDictionaryTerms, ts::removeIllegalPatterns, ts::removeLongShortTokens).values();
 
         IndexLoader il = IndexLoader.getInstance();
-        List<Pair<String, Term>> terms = new ArrayList<>();
+        List<Term> terms = new ArrayList<>();
 
         Iterator<Token> it = tokens.iterator();
         while(it.hasNext()){
@@ -86,12 +92,13 @@ public class SearchEngine extends Thread {
 
             Term term = il.getTermByHashToken(t.getHash(), t.getToken());
             LOGGER.trace("Term in query: {}. Found in Index: {}", t.getToken(), term != null);
-            terms.add(new Pair<>(t.getToken(), term));
+            if(term != null)
+                terms.add(term);
         }
         return terms;
     }
 
-    private Set<Integer> getRelevantDocIds(List<Pair<String, Term>> terms){
+    private Set<Integer> getRelevantDocIds(List<Term> terms){
         LOGGER.debug("Getting relevant document IDs.");
 
         // No Tokens provided
@@ -101,22 +108,19 @@ public class SearchEngine extends Thread {
         }
 
         Set<Integer> docIds = new HashSet<>();
-        for(int i = 0; i < terms.size(); i++){
-            Pair<String, Term> term = terms.get(i);
-            if(term != null) {
-                if (docIds.isEmpty())
-                    docIds.addAll(term.b.getDocs());
-                else
-                    docIds = intersectSets(docIds, term.b.getDocs());
-            }
+        for(Term t : terms){
+            if (docIds.isEmpty())
+                docIds.addAll(t.getDocs());
+            else
+                docIds = intersectSets(docIds, t.getDocs());
         }
 
-        if(docIds.size() < 50){
+        if(docIds.size() < 50 && terms.size() >= 2){
             // {x, [x, x, x, x}, x]
             LOGGER.trace("Not enough relevant documents where found. Using left half of List.");
-            docIds.addAll(getRelevantDocIds(terms.subList(0, terms.size() - 2))); // 0 - n-1
+            docIds.addAll(getRelevantDocIds(terms.subList(0, terms.size() - 1))); // 0 - n-1
             LOGGER.trace("Using right half of List.");
-            docIds.addAll(getRelevantDocIds(terms.subList(1, terms.size() - 1))); // 1 - n
+            docIds.addAll(getRelevantDocIds(terms.subList(1, terms.size()))); // 1 - n
         }
 
         if(LOGGER.isTraceEnabled()){
@@ -148,5 +152,54 @@ public class SearchEngine extends Thread {
             LOGGER.trace("Found document: {}", doc.getTitle());
         }
         return docs;
+    }
+
+    private List<Doc> rankDocs(Set<Doc> docs, List<Term> tokens){
+        TreeSet<Pair<Doc, Double>> top5 = new TreeSet<>(new Comparator<Pair<Doc, Double>>() {
+            @Override
+            public int compare(Pair<Doc, Double> o1, Pair<Doc, Double> o2) {
+                double diff = o1.b - o2.b;
+                if(diff == 0)
+                    return 0;
+                else
+                    return diff < 0 ? -1 : 1;
+            }
+        });
+
+        for(Doc doc : docs){
+            top5.add(new Pair<>(doc, rankDocument(doc, tokens)));
+
+            if(top5.size() > 5)
+                top5.pollFirst();
+        }
+
+        List<Doc> bestTop5 = new ArrayList<>();
+        while(!top5.isEmpty())
+            bestTop5.add(top5.pollLast().a);
+
+        return bestTop5;
+    }
+
+    private double rankDocument(Doc doc, List<Term> terms){
+        double sum = 0;
+        double base  = Math.log(2);
+        for(Term t : terms) {
+            double tf = t.getDocFrequency(doc) / (double) doc.getHighestTokenFreq();
+            double idf = Math.log(IndexLoader.getInstance().getNumDocs() / (double) t.numberAssociatedDocs()) / base;
+            sum += tf * idf;
+        }
+        return sum;
+    }
+
+    private void printDocuments(List<Doc> docs){
+        System.out.println();
+        for(int i = 0; i < docs.size(); i++){
+            Doc d = docs.get(i);
+            System.out.printf("%d) %s%n", i + 1, d.getTitle());
+            System.out.printf("\tLocation: %s%n%n", d.getDocFile().getAbsolutePath());
+        }
+
+        System.out.println();
+        System.out.println();
     }
 }

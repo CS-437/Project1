@@ -32,6 +32,17 @@ public class Term implements Comparable<Term> {
         return docFrequencies.keySet();
     }
 
+    public int numberAssociatedDocs(){
+        return docFrequencies.size();
+    }
+
+    public int getDocFrequency(Doc doc){
+        Integer freq = docFrequencies.get(doc.getId());
+        if(freq == null)
+            return 0;
+        return freq;
+    }
+
     @Override
     public int compareTo(Term o) {
         return token.compareTo(o.token);

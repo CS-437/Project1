@@ -60,7 +60,7 @@ public class Run {
         IndexLoader il = IndexLoader.getInstance();
         il.loadIndex(dir);
         il.loadQueryLogs(aolDir);
-
+        
         //TODO: update the loading index sequence to ensure both the index and query logs are completed
         System.out.print("Loading Index ");
         while(!il.isFinishedLoading()){
