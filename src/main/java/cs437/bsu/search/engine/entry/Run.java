@@ -1,10 +1,11 @@
 package cs437.bsu.search.engine.entry;
 
-import cs437.bsu.search.engine.corpus.Scanner;
+import cs437.bsu.search.engine.corpus.TextScanner;
 import cs437.bsu.search.engine.corpus.create.Indexer;
 import cs437.bsu.search.engine.index.IndexLoader;
 import cs437.bsu.search.engine.query.SearchEngine;
 import cs437.bsu.search.engine.util.LoggerInitializer;
+import cs437.bsu.search.engine.util.TaskExecutor;
 import org.slf4j.Logger;
 
 import java.io.*;
@@ -16,7 +17,7 @@ public class Run {
 
     public static void main(String[] args) {
         ArgumentParser ap = new ArgumentParser(args);
-         LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Run.class);
+        LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Run.class);
 
         switch (ArgumentParser.application) {
             case CreateIndex:
@@ -45,7 +46,7 @@ public class Run {
         LOGGER.info("Finished loading all documents to be indexed.");
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            Scanner s = Scanner.getInstance();
+            TextScanner s = TextScanner.getInstance();
             System.out.printf("Total Tokens found Pre-Processing: %d%n", s.getPreProcessingSize());
             System.out.printf("Total Tokens found Post-Processing: %d%n", s.getPostProcessingSize());
 
@@ -63,21 +64,15 @@ public class Run {
         while(!il.isFinishedLoading()){
             for(int i = 0; i < 3; i++){
                 System.out.print(".");
-                sleep(750);
+                TaskExecutor.sleep(750);
             }
             System.out.print("\b\b\b");
-            sleep(750);
+            TaskExecutor.sleep(750);
         }
         System.out.println();
 
         LOGGER.info("Index loaded. Starting Search Engine.");
         new SearchEngine().start();
-    }
-
-    private static void sleep(long length){
-        try {
-            Thread.sleep(length);
-        }catch (Exception e){}
     }
 
     private static String getTimeLength(long duration){

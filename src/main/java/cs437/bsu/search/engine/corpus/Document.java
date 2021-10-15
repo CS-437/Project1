@@ -55,7 +55,7 @@ public class Document {
                 LOGGER.atError().setCause(e).log("Failed to parse Document fully: {}", getDocumentPath());
             }
 
-            Scanner s = Scanner.getInstance();
+            TextScanner s = TextScanner.getInstance();
 
             LOGGER.trace("General document scan complete. Starting deeper scan.");
             CoreDocument doc = s.scan(sb);

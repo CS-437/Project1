@@ -22,14 +22,16 @@ public class IndexLoader {
         return INSTANCE;
     }
 
-    private Map<Integer, Document> idDocMap;
-    private Map<Integer, Token> idTokenMap;
+    private Map<Integer, Doc> idDocMap;
+    private Map<Integer, Term> idTokenMap;
+    private Map<Long, Map<String, Term>> hashTokenMap;
     private boolean finishedLoading;
     private long intersectionsLoaded;
 
     private IndexLoader(){
         idDocMap = new HashMap<>();
         idTokenMap = new HashMap<>();
+        hashTokenMap = new HashMap<>();
         finishedLoading = false;
         intersectionsLoaded = 0;
     }
@@ -81,11 +83,31 @@ public class IndexLoader {
         }, () -> {
             LOGGER.info("Starting to load intersections.");
             loadIntersections(intersections);
+            long tokensLoaded = idTokenMap.size();
+
+            transitionTokenMap();
             cleanup();
+
             LOGGER.info("Index loading complete.");
-            LOGGER.info("Loaded {} Tokens, {} Documents, and {} Intersections.", idTokenMap.size(), idDocMap.size(), intersectionsLoaded);
+            LOGGER.info("Loaded {} Tokens, {} Documents, and {} Intersections.", tokensLoaded, idDocMap.size(), intersectionsLoaded);
             this.finishedLoading = true;
         });
+    }
+
+    private void transitionTokenMap(){
+        Iterator<Map.Entry<Integer, Term>> it = idTokenMap.entrySet().iterator();
+        while(it.hasNext()){
+            Term token = it.next().getValue();
+            it.remove();
+
+            Map<String, Term> tokens = hashTokenMap.get(token.getHashValue());
+            if(tokens == null){
+                tokens = new HashMap<>();
+                hashTokenMap.put(token.getHashValue(), tokens);
+            }
+            tokens.put(token.getToken(), token);
+        }
+        idTokenMap = null;
     }
 
     private void cleanup(){
@@ -193,7 +215,7 @@ public class IndexLoader {
                     }
                 }
 
-                idDocMap.put(Integer.parseInt(id), new Document(title, path, Integer.parseInt(highFreqTerm)));
+                idDocMap.put(Integer.parseInt(id), new Doc(title, path, Integer.parseInt(highFreqTerm)));
                 LOGGER.trace("Loading Document. ID={},Title={},Path={},HighTermFreq={}", id, title, path, highFreqTerm);
             }
         };
@@ -236,7 +258,7 @@ public class IndexLoader {
                     }
                 }
 
-                idTokenMap.put(Integer.parseInt(id), new Token(token, Long.parseLong(hash)));
+                idTokenMap.put(Integer.parseInt(id), new Term(token, Long.parseLong(hash)));
                 LOGGER.trace("Loading Token. ID={},Token={},HASH={}", id, token, hash);
             }
         };

@@ -16,15 +16,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-public class Scanner {
+public class TextScanner {
 
-    private static Scanner INSTANCE;
-    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Scanner.class);
+    private static TextScanner INSTANCE;
+    private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(TextScanner.class);
     private static final String DICTIONARY_RES = "dictionary.txt";
 
-    public synchronized static Scanner getInstance(){
+    public synchronized static TextScanner getInstance(){
         if(INSTANCE == null)
-            INSTANCE = new Scanner();
+            INSTANCE = new TextScanner();
         return INSTANCE;
     }
 
@@ -44,7 +44,7 @@ public class Scanner {
             LOGGER.info("Loading stopwords from: {}", resourceFileName);
 
             Set<String> stopwords = new HashSet<>();
-            InputStream resource = Scanner.class.getResourceAsStream(resourceFileName);
+            InputStream resource = TextScanner.class.getResourceAsStream(resourceFileName);
 
             try(BufferedReader br = new BufferedReader(new InputStreamReader(resource))){
                 String line;
@@ -64,7 +64,7 @@ public class Scanner {
     private long preprocessingSize;
     private long postprocessingSize;
 
-    private Scanner(){
+    private TextScanner(){
         Properties props = new Properties();
         props.setProperty("annotators", "tokenize,ssplit,pos,lemma");
         props.setProperty("tokenize.language", "English");
@@ -111,7 +111,7 @@ public class Scanner {
         LOGGER.info("Loading Dictionary Words.");
         Map<Long, Set<String>> dic = new HashMap<>();
 
-        InputStream resource = Scanner.class.getResourceAsStream(DICTIONARY_RES);
+        InputStream resource = TextScanner.class.getResourceAsStream(DICTIONARY_RES);
         try(BufferedReader br = new BufferedReader(new InputStreamReader(resource))){
             String line;
             while((line = br.readLine()) != null){
@@ -131,8 +131,12 @@ public class Scanner {
     }
 
     public CoreDocument scan(StringBuilder sb){
+        return scan(sb.toString());
+    }
+
+    public CoreDocument scan(String string){
         LOGGER.info("Converting document to a CoreDocument.");
-        String doc = new String(sb.toString().getBytes(), StandardCharsets.US_ASCII).replace((char) 65533, '~');
+        String doc = new String(string.getBytes(), StandardCharsets.US_ASCII).replace((char) 65533, '~');
         return pipeline.processToCoreDocument(doc);
     }
 
