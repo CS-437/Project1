@@ -1,8 +1,11 @@
 package cs437.bsu.search.engine.entry;
 
-import cs437.bsu.search.engine.corpus.Scanner;
+import cs437.bsu.search.engine.corpus.TextScanner;
 import cs437.bsu.search.engine.corpus.create.Indexer;
+import cs437.bsu.search.engine.index.IndexLoader;
+import cs437.bsu.search.engine.query.SearchEngine;
 import cs437.bsu.search.engine.util.LoggerInitializer;
+import cs437.bsu.search.engine.util.TaskExecutor;
 import org.slf4j.Logger;
 
 import java.io.*;
@@ -14,20 +17,14 @@ public class Run {
 
     public static void main(String[] args) {
         ArgumentParser ap = new ArgumentParser(args);
-
-         LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Run.class);
-
-        if(!ap.checkForMandatoryProperties()){
-            System.err.println("One or more Mandatory System Properties are missing.");
-            System.exit(-1);
-        }
+        LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Run.class);
 
         switch (ArgumentParser.application) {
             case CreateIndex:
-                createIndex(ap.getIndexDirectory());
+                createIndex(ap.getDirectory());
                 break;
             default:
-                searchEngine();
+                searchEngine(ap.getDirectory(), ap.getAolDir());
                 break;
         }
     }
@@ -49,7 +46,7 @@ public class Run {
         LOGGER.info("Finished loading all documents to be indexed.");
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            Scanner s = Scanner.getInstance();
+            TextScanner s = TextScanner.getInstance();
             System.out.printf("Total Tokens found Pre-Processing: %d%n", s.getPreProcessingSize());
             System.out.printf("Total Tokens found Post-Processing: %d%n", s.getPostProcessingSize());
 
@@ -58,8 +55,26 @@ public class Run {
         }));
     }
 
-    private static void searchEngine(){
+    private static void searchEngine(File dir, File aolDir){
         LOGGER.info("Starting Search Engine ...");
+        IndexLoader il = IndexLoader.getInstance();
+        il.loadIndex(dir);
+        il.loadQueryLogs(aolDir);
+        
+        //TODO: update the loading index sequence to ensure both the index and query logs are completed
+        System.out.print("Loading Index ");
+        while(!il.isFinishedLoading()){
+            for(int i = 0; i < 3; i++){
+                System.out.print(".");
+                TaskExecutor.sleep(750);
+            }
+            System.out.print("\b\b\b");
+            TaskExecutor.sleep(750);
+        }
+        System.out.println();
+
+        LOGGER.info("Index loaded. Starting Search Engine.");
+        new SearchEngine().start();
     }
 
     private static String getTimeLength(long duration){

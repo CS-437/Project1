@@ -1,6 +1,6 @@
 package cs437.bsu.search.engine.corpus;
 
-import cs437.bsu.search.engine.database.DMLCreator;
+import cs437.bsu.search.engine.index.IndexCreator;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import org.slf4j.Logger;
 
@@ -24,7 +24,7 @@ public class Token {
 
     public void saveData(int docId, boolean lastToken) {
         LOGGER.debug("Adding Token to DML. DocID={},Token={}", docId, token);
-        DMLCreator.getInstance().saveTokenData(docId, this, lastToken);
+        IndexCreator.getInstance().saveTokenData(docId, this, lastToken);
     }
 
     public static long getHashValue(String s) {

@@ -16,6 +16,7 @@ public class ArgumentParser {
     private boolean validArgs;
     private String errorRsn;
     private File dir;
+    private File aolDir;
 
     public ArgumentParser(String[] args){
         validArgs = true;
@@ -50,17 +51,10 @@ public class ArgumentParser {
         }
     }
 
-    public File getIndexDirectory(){
+    public File getDirectory(){
         return dir;
     }
-
-    public boolean checkForMandatoryProperties(){
-        boolean mandatoryPropsExist = System.getProperties().get("database.credential.username") != null;
-        mandatoryPropsExist &= System.getProperties().get("database.credential.password") != null;
-        mandatoryPropsExist &= System.getProperties().get("database.connection.address") != null;
-        mandatoryPropsExist &= System.getProperties().get("database.connection.port") != null;
-        return mandatoryPropsExist;
-    }
+    public File getAolDir() { return aolDir; }
 
     private int loadApplication(int loc, String[] args){
         loc++;
@@ -87,7 +81,7 @@ public class ArgumentParser {
             case CreateIndex:
                 loc++;
                 if(checkLength(loc, args)){
-                    errorRsn = "No directory to index was provided.";
+                    errorRsn = "No directory to corpus was provided.";
                     return -1;
                 }
 
@@ -98,7 +92,33 @@ public class ArgumentParser {
                 }
                 break;
             default:
-                //TODO: If we add args to SearchIndex we need to account for that hear
+                //INDEX
+                loc++;
+                if(checkLength(loc, args)){
+                    errorRsn = "No directory to index was provided.";
+                    return -1;
+                }
+
+                dir = new File(args[loc]);
+                if(!dir.exists() || !dir.isDirectory()){
+                    validArgs = false;
+                    errorRsn = String.format("Invalid index directory provided: %s", args[loc]);
+                }
+
+
+                //AOL
+                loc++;
+                if(checkLength(loc, args)){
+                    errorRsn = "No directory to aol query logs was provided.";
+                    return -1;
+                }
+
+                aolDir = new File(args[loc]);
+                if(!aolDir.exists() || !aolDir.isDirectory()){
+                    validArgs = false;
+                    errorRsn = String.format("Invalid aol query log directory provided: %s", args[loc]);
+                }
+
                 break;
         }
 

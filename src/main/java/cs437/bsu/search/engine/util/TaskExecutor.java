@@ -18,4 +18,15 @@ public class TaskExecutor {
         });
         t.start();
     }
+
+    /**
+     * @param milliseconds
+     */
+    public static void sleep(long milliseconds){
+        try{
+            Thread.sleep(milliseconds);
+        }catch (Exception e){
+            LOGGER.atWarn().setCause(e).log("Failed to wait: {}", milliseconds);
+        }
+    }
 }

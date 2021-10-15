@@ -1,6 +1,6 @@
 package cs437.bsu.search.engine.corpus;
 
-import cs437.bsu.search.engine.database.DMLCreator;
+import cs437.bsu.search.engine.index.IndexCreator;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import cs437.bsu.search.engine.util.TaskExecutor;
 import edu.stanford.nlp.pipeline.CoreDocument;
@@ -55,7 +55,7 @@ public class Document {
                 LOGGER.atError().setCause(e).log("Failed to parse Document fully: {}", getDocumentPath());
             }
 
-            Scanner s = Scanner.getInstance();
+            TextScanner s = TextScanner.getInstance();
 
             LOGGER.trace("General document scan complete. Starting deeper scan.");
             CoreDocument doc = s.scan(sb);
@@ -85,7 +85,7 @@ public class Document {
         }
 
         if(largestFreq > 0)
-            DMLCreator.getInstance().saveDocumentData(largestFreq, this, lastDoc);
+            IndexCreator.getInstance().saveDocumentData(largestFreq, this, lastDoc);
     }
 
     public File getFile() {
