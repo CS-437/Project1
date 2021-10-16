@@ -16,6 +16,10 @@ import java.io.FileReader;
 import java.util.*;
 import java.util.function.BiFunction;
 
+/**
+ * Represents a Document during the Search Engine Phase.
+ * @author Cade Peterson
+ */
 public class Doc {
 
     private static Logger LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Doc.class);
@@ -25,6 +29,13 @@ public class Doc {
     private String path;
     private int highestTokenFreq;
 
+    /**
+     * Creates a Document with specific info.
+     * @param id ID of the document.
+     * @param title Title of the document.
+     * @param path Path to the document.
+     * @param highestTokenFreq Highest found token frequency in the document.
+     */
     protected Doc(int id, String title, String path, int highestTokenFreq){
         this.id = id;
         this.title = title;
@@ -32,22 +43,57 @@ public class Doc {
         this.highestTokenFreq = highestTokenFreq;
     }
 
+    /**
+     * Gets the Title of the document.
+     * @return Document Title.
+     */
     public String getTitle(){
         return title;
     }
 
+    /**
+     * Gets the File that holds this document.
+     * @return Document File.
+     */
     public File getDocFile(){
         return new File(path);
     }
 
+    /**
+     * Gets the ID of this document.
+     * @return Document ID.
+     */
     public int getId() {
         return id;
     }
 
+    /**
+     * Gets the highest frequency count for a token
+     * within this document.
+     * @return Highest frequency count.
+     */
     public int getHighestTokenFreq() {
         return highestTokenFreq;
     }
 
+    /**
+     * Generates a Snippet for this document and saves it to the List provided.
+     * This snippet is found by finding the top 2 sentences with the highest cosine
+     * similarity to the query. These sentences are also ordered by position found
+     * in the document. The snippet also contains the title of the document and its
+     * location.
+     * <p>
+     * <b><u>Snippet Format:</u></b>
+     * <br>
+     * position) title
+     * <br>
+     * top 2 sentences word wrapped at 100 characters more or less
+     * <br>
+     * LOCATION: file location
+     * @param docs List to save snippet to.
+     * @param position Location to save snippet in list.
+     * @param tokens List of pre-processed tokens from query.
+     */
     public void getDocSnippets(List<String> docs, int position, List<Term> tokens){
         TextScanner ts = TextScanner.getInstance();
         CoreDocument document = ts.scan(loadDocFile());
@@ -145,6 +191,10 @@ public class Doc {
         docs.set(position, sb.toString());
     }
 
+    /**
+     * Loads the Document content from the file.
+     * @return Document content without the title.
+     */
     private StringBuilder loadDocFile(){
         StringBuilder sb = new StringBuilder();
         try(BufferedReader br = new BufferedReader(new FileReader(getDocFile()))){
