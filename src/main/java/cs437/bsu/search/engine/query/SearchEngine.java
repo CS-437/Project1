@@ -9,10 +9,15 @@ import cs437.bsu.search.engine.index.Doc;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import cs437.bsu.search.engine.util.TaskExecutor;
 import edu.stanford.nlp.pipeline.CoreDocument;
+import edu.stanford.nlp.pipeline.CoreSentence;
+import edu.stanford.nlp.util.Index;
 import org.apache.lucene.search.Sort;
 import org.slf4j.Logger;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.util.*;
+import java.util.concurrent.Phaser;
 
 public class SearchEngine extends Thread {
 
@@ -70,7 +75,7 @@ public class SearchEngine extends Thread {
             Set<Integer> relevantDocIds = getRelevantDocIds(tokens);
             Set<Doc> docs = getDocuments(relevantDocIds);
             List<Doc> top5Docs = rankDocs(docs, tokens);
-            printDocuments(top5Docs);
+            printDocuments(top5Docs, tokens);
         }else{
             System.out.printf("%n\tYour Query '%s' didn't match any of the documents.%n%n%n", query);
         }
@@ -116,11 +121,18 @@ public class SearchEngine extends Thread {
         }
 
         if(docIds.size() < 50 && terms.size() >= 2){
-            // {x, [x, x, x, x}, x]
-            LOGGER.trace("Not enough relevant documents where found. Using left half of List.");
-            docIds.addAll(getRelevantDocIds(terms.subList(0, terms.size() - 1))); // 0 - n-1
-            LOGGER.trace("Using right half of List.");
-            docIds.addAll(getRelevantDocIds(terms.subList(1, terms.size()))); // 1 - n
+            LOGGER.trace("Haven't found enough documents. Search a sub section of the list.");
+            for(int i = 0; i < terms.size(); i++) {
+                if(i == 0) {
+                    docIds.addAll(getRelevantDocIds(terms.subList(1, terms.size()))); // 0 - n-1
+                }else if(i == terms.size() - 1) {
+                    docIds.addAll(getRelevantDocIds(terms.subList(0, terms.size() - 1))); // 0 - n-1
+                }else {
+                    List<Term> subList = terms.subList(0, i);
+                    subList.addAll(terms.subList(i + 1, terms.size()));
+                    docIds.addAll(getRelevantDocIds(subList));
+                }
+            }
         }
 
         if(LOGGER.isTraceEnabled()){
@@ -167,20 +179,27 @@ public class SearchEngine extends Thread {
         });
 
         for(Doc doc : docs){
-            top5.add(new Pair<>(doc, rankDocument(doc, tokens)));
+            double rank = rankDocument(doc, tokens);
+            top5.add(new Pair<>(doc, rank));
+            LOGGER.debug("Ranking Document {}: {}", doc.getTitle(), rank);
 
             if(top5.size() > 5)
                 top5.pollFirst();
         }
 
+        StringBuilder sb = new StringBuilder();
         List<Doc> bestTop5 = new ArrayList<>();
-        while(!top5.isEmpty())
-            bestTop5.add(top5.pollLast().a);
+        while(!top5.isEmpty()) {
+            Doc d = top5.pollLast().a;
+            sb.append(" " + d.getTitle());
+            bestTop5.add(d);
+        }
+        LOGGER.debug("Top 5 Documents:{}", sb);
 
         return bestTop5;
     }
 
-    private double rankDocument(Doc doc, List<Term> terms){
+    public static double rankDocument(Doc doc, List<Term> terms){
         double sum = 0;
         double base  = Math.log(2);
         for(Term t : terms) {
@@ -191,15 +210,30 @@ public class SearchEngine extends Thread {
         return sum;
     }
 
-    private void printDocuments(List<Doc> docs){
-        System.out.println();
+    private void printDocuments(List<Doc> docs, List<Term> tokens){
+        List<String> docsSnippets = new ArrayList<>();
+        List<Boolean> docSnipsDone = new ArrayList<>();
+
         for(int i = 0; i < docs.size(); i++){
-            Doc d = docs.get(i);
-            System.out.printf("%d) %s%n", i + 1, d.getTitle());
-            System.out.printf("\tLocation: %s%n%n", d.getDocFile().getAbsolutePath());
+            docsSnippets.add(i, "");
+            docSnipsDone.add(i, false);
+            final int loc = i;
+            TaskExecutor.StartTask(() -> { docs.get(loc).getDocSnippets(docsSnippets, loc, tokens);},
+                    () -> {docSnipsDone.set(loc, true);});
+        }
+
+        boolean allDone = false;
+        while(!allDone){
+            boolean currentCheck = true;
+            for(boolean b : docSnipsDone)
+                currentCheck &= b;
+
+            allDone = currentCheck;
         }
 
         System.out.println();
+        for(String s : docsSnippets)
+            System.out.println(s);
         System.out.println();
     }
 }

@@ -3,6 +3,7 @@ package cs437.bsu.search.engine.corpus;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.CoreDocument;
+import edu.stanford.nlp.pipeline.CoreSentence;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import org.slf4j.Logger;
 
@@ -141,17 +142,25 @@ public class TextScanner {
     }
 
     public Map<String, Token> getDocTokens(CoreDocument document, Consumer<Map<String, Token>> ... cleaningMethods){
-        Map<String, Token> tokens = getDocumentTokens(document);
+        Map<String, Token> tokens = getDocumentTokens(document.tokens());
         for(int i = 0; i < cleaningMethods.length; i++)
             cleaningMethods[i].accept(tokens);
         postprocessingSize += tokens.size();
         return tokens;
     }
 
-    private Map<String, Token> getDocumentTokens(CoreDocument document){
-        LOGGER.debug("Getting Tokens from Document.");
+    public Map<String, Token> getSentenceTokens(CoreSentence sentence, Consumer<Map<String, Token>> ... cleaningMethods){
+        Map<String, Token> tokens = getDocumentTokens(sentence.tokens());
+        for(int i = 0; i < cleaningMethods.length; i++)
+            cleaningMethods[i].accept(tokens);
+        postprocessingSize += tokens.size();
+        return tokens;
+    }
+
+    private Map<String, Token> getDocumentTokens(List<CoreLabel> labels){
+        LOGGER.debug("Getting Tokens from Document/Sentence.");
         Map<String, Token> tokens = new HashMap<>();
-        for(CoreLabel token : document.tokens()) {
+        for(CoreLabel token : labels) {
             preprocessingSize++;
             String word = token.lemma().toLowerCase();
             if(word == null)
