@@ -154,22 +154,22 @@ public class IndexLoader {
             this.finishedLoading = true;
         });
     }
-    /**
-     * Loads the AOL Query logs the directory provided. All files ending in .txt
-     * are loaded and considered AOL Query Logs. Note that once this method is
-     * invoked a Thread will be kicked off to load the index. Refer to
-     * {@link #isFinishedLoading()} to know when this is thread has completed.
-     * @param aolDir Directory to load AOL Query Logs from.
-     */
-    public void loadQueryLogs (File aolDir) {
-
-        LOGGER.info("Loading query logs from: {}", aolDir.getAbsolutePath());
-
-//        Pattern sqlFilePattern = Pattern.compile("^.*\\.sql$");
-//        File[] files = aolDir.listFiles((File directory, String name) -> {
+//    /**
+//     * Loads the AOL Query logs the directory provided. All files ending in .txt
+//     * are loaded and considered AOL Query Logs. Note that once this method is
+//     * invoked a Thread will be kicked off to load the index. Refer to
+//     * {@link #isFinishedLoading()} to know when this is thread has completed.
+//     * @param aolDir Directory to load AOL Query Logs from.
+//     */
+//    public void loadQueryLogs (File aolDir) {
 //
-//        });
-    }
+//        LOGGER.info("Loading query logs from: {}", aolDir.getAbsolutePath());
+//
+////        Pattern sqlFilePattern = Pattern.compile("^.*\\.sql$");
+////        File[] files = aolDir.listFiles((File directory, String name) -> {
+////
+////        });
+//    }
 
     /**
      * Transitions all tokens from the {@link #idTokenMap} to the

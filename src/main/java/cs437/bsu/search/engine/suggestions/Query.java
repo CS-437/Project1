@@ -26,10 +26,15 @@ public class Query implements Comparable<Query> {
         return this.session.getId();
     }
 
+    public String getQuery(String query) {
+
+        return this.query;
+    }
+
 
     // Would want to thread this
     // Code adjustments will need to be made
-    private Set<Query> getQC(String[] query){
+    public Set<Query> getQC(String[] query){
         Set<Query> qcs = new HashSet<>();
         for(int i = position + 1; i < session.getQueries().size(); i++){
             Query possibleQC = (Query) session.getQueries().get(i);

@@ -4,6 +4,7 @@ import cs437.bsu.search.engine.corpus.TextScanner;
 import cs437.bsu.search.engine.corpus.create.Indexer;
 import cs437.bsu.search.engine.index.IndexLoader;
 import cs437.bsu.search.engine.query.SearchEngine;
+import cs437.bsu.search.engine.suggestions.AOLMap;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import cs437.bsu.search.engine.util.TaskExecutor;
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ public class Run {
      * Entry Point.
      * @param args Args as explain in man-page
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         ArgumentParser ap = new ArgumentParser(args);
         LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Run.class);
 
@@ -72,11 +73,14 @@ public class Run {
      * @param dir Directory to load reverse index.
      * @param aolDir Directory to load aol query logs.
      */
-    private static void searchEngine(File dir, File aolDir){
+    private static void searchEngine(File dir, File aolDir) throws IOException {
         LOGGER.info("Starting Search Engine ...");
         IndexLoader il = IndexLoader.getInstance();
         il.loadIndex(dir);
-        il.loadQueryLogs(aolDir);
+//        il.loadQueryLogs(aolDir);
+
+        AOLMap aol = new AOLMap();
+        aol.run();
         
         //TODO: update the loading index sequence to ensure both the index and query logs are completed
         System.out.print("Loading Index ");
@@ -91,7 +95,7 @@ public class Run {
         System.out.println();
 
         LOGGER.info("Index loaded. Starting Search Engine.");
-        new SearchEngine().start();
+        new SearchEngine(aol).start();
     }
 
     /**

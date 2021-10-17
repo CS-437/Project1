@@ -6,6 +6,9 @@ import cs437.bsu.search.engine.corpus.Token;
 import cs437.bsu.search.engine.index.IndexLoader;
 import cs437.bsu.search.engine.index.Term;
 import cs437.bsu.search.engine.index.Doc;
+import cs437.bsu.search.engine.suggestions.AOLMap;
+import cs437.bsu.search.engine.suggestions.Query;
+import cs437.bsu.search.engine.suggestions.Suggestion;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import cs437.bsu.search.engine.util.TaskExecutor;
 import edu.stanford.nlp.pipeline.CoreDocument;
@@ -36,14 +39,17 @@ public class SearchEngine extends Thread {
     private boolean exit;
     private Scanner queryReader;
     private String newScreen;
+    private AOLMap aolMap;
 
     /**
      * Creates the Search Engine. Note the {@link TextScanner} is loaded and might
      * delay this method invocation a bit, however this prevents further lag in
      * future requests for it.
      */
-    public SearchEngine(){
+    public SearchEngine(AOLMap aolMap){
         exit = false;
+        this.aolMap = aolMap;
+
         queryReader = new Scanner(System.in);
 
         StringBuilder sb = new StringBuilder();
@@ -71,9 +77,75 @@ public class SearchEngine extends Thread {
             }
 
             processQuery(query);
+            getSuggestions(query);
         }
         System.out.println("Exiting Search Engine.");
         LOGGER.info("Closing Search Engine.");
+    }
+
+    private void getSuggestions(String query) {
+
+        Map<String, Set<Query>> queryLogMap = aolMap.getMap();
+        Set<Query> querySessions = queryLogMap.get(query);
+        String[] parts = query.split("\\s+");
+
+        if (querySessions != null) {
+
+            // # of sessions in which q' is modified to CQ = qcToItsFreq.get(qc);
+            Map<String, Integer> qcToItsFreq = new HashMap<>();
+
+            Iterator<Query> it = querySessions.iterator();
+            while (it.hasNext()) {
+                Query curr = it.next();
+
+                for (Query qc : curr.getQC(parts)) {
+                    Integer i = qcToItsFreq.get(qc.getQuery(query));
+
+                    if (i == null)
+                        qcToItsFreq.put(qc.getQuery(query), 1);
+                    else
+                        qcToItsFreq.put(qc.getQuery(query), i + 1);
+                }
+            }
+
+            PriorityQueue<Suggestion> suggestion = calculate(querySessions, qcToItsFreq);
+
+            if (suggestion.size() > 0) {
+
+                System.out.println("Did you mean: ");
+                for (int i = 0; i < 5; i++) {
+
+                    Suggestion sugg = suggestion.poll();
+                    if(sugg != null) {
+
+                        System.out.println((i+1) + ". " + sugg.getKey() + ": " + sugg.getFreq());
+                    }
+                    else {
+
+                        break;
+                    }
+                }
+            } else {
+
+                System.out.println("No suggestions found for this query");
+            }
+        }
+    }
+
+    public static PriorityQueue<Suggestion> calculate(Set<Query> querySet, Map<String, Integer> qcFreq) {
+
+        PriorityQueue<Suggestion> topFive = new PriorityQueue<Suggestion>();
+
+        int lowFreq = 0;
+        int highFreq = 0;
+
+        for (String s : qcFreq.keySet()) {
+
+            Suggestion add = new Suggestion(s, qcFreq.get(s));
+            topFive.add(add);
+        }
+
+        return topFive;
     }
 
     /**

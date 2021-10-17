@@ -16,10 +16,14 @@ public class AOLMap {
         this.queryLogMap = new HashMap<String, Set<Query>>();
     }
 
+    public HashMap<String, Set<Query>> getMap() {
+
+        return (HashMap<String, Set<Query>>) queryLogMap;
+    }
+
     public void run() throws IOException {
 
         String prefixPath = "cs437.bsu.search.engine.aol/Clean-Data-0";
-        long start = System.currentTimeMillis();
 
         for (int i = 1; i < 6; i++) {
 
