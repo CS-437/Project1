@@ -9,10 +9,12 @@ import java.util.*;
 public class AOLMap {
 
     private Map<String, Set<Query>> queryLogMap;
+    private File aolDir;
 
 
-    public AOLMap() {
+    public AOLMap(File aolDir) {
 
+        this.aolDir = aolDir;
         this.queryLogMap = new HashMap<String, Set<Query>>();
     }
 
@@ -23,12 +25,11 @@ public class AOLMap {
 
     public void run() throws IOException {
 
-        String prefixPath = "cs437.bsu.search.engine.aol/Clean-Data-0";
+        File[] files = aolDir.listFiles();
 
-        for (int i = 1; i < 6; i++) {
+        assert files != null;
+        for (File f : files) {
 
-            String filePath = prefixPath + i + ".txt";
-            File f = new File(filePath);
             BufferedReader br = new BufferedReader(new FileReader(f));
 
             //Discard first line

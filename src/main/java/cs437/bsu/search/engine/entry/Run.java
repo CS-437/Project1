@@ -33,7 +33,7 @@ public class Run {
                 createIndex(ap.getDirectory());
                 break;
             default:
-                searchEngine(ap.getDirectory(), ap.getAolDir());
+                searchEngine(ap.getDirectory(),ap.getAolDir());
                 break;
         }
     }
@@ -71,17 +71,17 @@ public class Run {
     /**
      * Runs the Search Engine program.
      * @param dir Directory to load reverse index.
-     * @param aolDir Directory to load aol query logs.
+//     * @param aolDir Directory to load aol query logs.
      */
     private static void searchEngine(File dir, File aolDir) throws IOException {
         LOGGER.info("Starting Search Engine ...");
+
+        AOLMap aol = new AOLMap(aolDir);
+        aol.run();
         IndexLoader il = IndexLoader.getInstance();
         il.loadIndex(dir);
 //        il.loadQueryLogs(aolDir);
 
-        AOLMap aol = new AOLMap();
-        aol.run();
-        
         //TODO: update the loading index sequence to ensure both the index and query logs are completed
         System.out.print("Loading Index ");
         while(!il.isFinishedLoading()){

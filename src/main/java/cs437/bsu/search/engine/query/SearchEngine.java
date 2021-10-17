@@ -66,9 +66,15 @@ public class SearchEngine extends Thread {
     public void run() {
         clearScreen();
 
+        boolean setSuggestion = false;
+        ArrayList<String> prevSugg = null;
+
         while (!exit){
-            System.out.print("Please enter a query: ");
-            String query = queryReader.nextLine();
+
+            String query;
+            System.out.print("\nPlease enter a query: ");
+            query = queryReader.nextLine();
+
             LOGGER.info("Query provided: {}", query);
 
             if(query.equalsIgnoreCase(EXIT_KEYWORD)){
@@ -76,18 +82,32 @@ public class SearchEngine extends Thread {
                 continue;
             }
 
+            if(prevSugg != null) {
+                for(int i = 0; i < prevSugg.size(); i++) {
+
+                    String test = query;
+                    String prev = (i+1) + ".";
+
+                    if(test.equals(prev)) {
+
+                        query = prevSugg.get(i);
+                    }
+                }
+            }
+
             processQuery(query);
-            getSuggestions(query);
+            prevSugg = getSuggestions(query);
         }
         System.out.println("Exiting Search Engine.");
         LOGGER.info("Closing Search Engine.");
     }
 
-    private void getSuggestions(String query) {
+    private ArrayList<String> getSuggestions(String query) {
 
         Map<String, Set<Query>> queryLogMap = aolMap.getMap();
         Set<Query> querySessions = queryLogMap.get(query);
         String[] parts = query.split("\\s+");
+        ArrayList<String> ret = new ArrayList<String>(5);
 
         if (querySessions != null) {
 
@@ -109,16 +129,20 @@ public class SearchEngine extends Thread {
             }
 
             PriorityQueue<Suggestion> suggestion = calculate(querySessions, qcToItsFreq);
+            System.out.println("---------------------------------------------------------");
+
 
             if (suggestion.size() > 0) {
 
-                System.out.println("Did you mean: ");
+                System.out.println("Instead of \"" + query + "\" would you like to search for: ");
                 for (int i = 0; i < 5; i++) {
 
                     Suggestion sugg = suggestion.poll();
+
                     if(sugg != null) {
 
-                        System.out.println((i+1) + ". " + sugg.getKey() + ": " + sugg.getFreq());
+                        System.out.println("        " + (i+1) + ". " + sugg.getKey() + " ---> Enter " + (i+1) + ".");
+                        ret.add(sugg.getKey());
                     }
                     else {
 
@@ -127,9 +151,11 @@ public class SearchEngine extends Thread {
                 }
             } else {
 
-                System.out.println("No suggestions found for this query");
+                System.out.println("No suggestions found for this query\n");
             }
         }
+
+        return ret;
     }
 
     public static PriorityQueue<Suggestion> calculate(Set<Query> querySet, Map<String, Integer> qcFreq) {
