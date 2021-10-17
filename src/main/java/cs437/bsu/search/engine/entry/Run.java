@@ -10,11 +10,19 @@ import org.slf4j.Logger;
 
 import java.io.*;
 
+/**
+ * Main Entry point for choosing program to execute.
+ * @author Cade Peterson, Nick Deighton
+ */
 public class Run {
 
     private static Logger LOGGER;
     private static Indexer indexer;
 
+    /**
+     * Entry Point.
+     * @param args Args as explain in man-page
+     */
     public static void main(String[] args) {
         ArgumentParser ap = new ArgumentParser(args);
         LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Run.class);
@@ -29,10 +37,13 @@ public class Run {
         }
     }
 
+    /**
+     * Runs the Create Index program.
+     * @param indexDirectory Directory to scan corpus.
+     */
     private static void createIndex(File indexDirectory){
         LOGGER.info("Starting Index Creation ...");
         LOGGER.info("Indexing directory: {}", indexDirectory.getAbsolutePath());
-
 
         long start = System.currentTimeMillis();
         File[] files = indexDirectory.listFiles();
@@ -45,6 +56,7 @@ public class Run {
         indexer.addedAllDocuments();
         LOGGER.info("Finished loading all documents to be indexed.");
 
+        // Prints all final information before closing down the application
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             TextScanner s = TextScanner.getInstance();
             System.out.printf("Total Tokens found Pre-Processing: %d%n", s.getPreProcessingSize());
@@ -55,6 +67,11 @@ public class Run {
         }));
     }
 
+    /**
+     * Runs the Search Engine program.
+     * @param dir Directory to load reverse index.
+     * @param aolDir Directory to load aol query logs.
+     */
     private static void searchEngine(File dir, File aolDir){
         LOGGER.info("Starting Search Engine ...");
         IndexLoader il = IndexLoader.getInstance();
@@ -77,6 +94,11 @@ public class Run {
         new SearchEngine().start();
     }
 
+    /**
+     * Calculates the length of from the provided long.
+     * @param duration Duration of time in milliseconds.
+     * @return Formatted time duration HH::MM::SS.mmm
+     */
     private static String getTimeLength(long duration){
         long millis = duration % 1000;
         long second = (duration / 1000) % 60;
