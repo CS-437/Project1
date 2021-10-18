@@ -26,7 +26,7 @@ public class Query implements Comparable<Query> {
         return this.session.getId();
     }
 
-    public String getQuery(String query) {
+    public String getQuery() {
 
         return this.query;
     }

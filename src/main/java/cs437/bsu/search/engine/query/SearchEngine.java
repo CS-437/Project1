@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.Phaser;
 
@@ -97,12 +98,13 @@ public class SearchEngine extends Thread {
 
             processQuery(query);
             prevSugg = getSuggestions(query);
+            System.out.flush();
         }
         System.out.println("Exiting Search Engine.");
         LOGGER.info("Closing Search Engine.");
     }
 
-    private ArrayList<String> getSuggestions(String query) {
+        private ArrayList<String> getSuggestions(String query) {
 
         Map<String, Set<Query>> queryLogMap = aolMap.getMap();
         Set<Query> querySessions = queryLogMap.get(query);
@@ -119,18 +121,20 @@ public class SearchEngine extends Thread {
                 Query curr = it.next();
 
                 for (Query qc : curr.getQC(parts)) {
-                    Integer i = qcToItsFreq.get(qc.getQuery(query));
+                    Integer i = qcToItsFreq.get(qc.getQuery());
 
                     if (i == null)
-                        qcToItsFreq.put(qc.getQuery(query), 1);
+                        qcToItsFreq.put(qc.getQuery(), 1);
                     else
-                        qcToItsFreq.put(qc.getQuery(query), i + 1);
+                        qcToItsFreq.put(qc.getQuery(), i + 1);
                 }
             }
 
-            PriorityQueue<Suggestion> suggestion = calculate(querySessions, qcToItsFreq);
+            PriorityQueue<Suggestion> suggestion = getTopSuggestions(qcToItsFreq);
             System.out.println("---------------------------------------------------------");
 
+            DecimalFormat df = new DecimalFormat("#.######");
+            int denom = queryLogMap.get(query).size();
 
             if (suggestion.size() > 0) {
 
@@ -141,6 +145,8 @@ public class SearchEngine extends Thread {
 
                     if(sugg != null) {
 
+//                        double score = (float) sugg.getFreq() / denom;
+//                        String sc = df.format(score);
                         System.out.println("        " + (i+1) + ". " + sugg.getKey() + " ---> Enter " + (i+1) + ".");
                         ret.add(sugg.getKey());
                     }
@@ -155,10 +161,16 @@ public class SearchEngine extends Thread {
             }
         }
 
+        else {
+
+            System.out.println("---------------------------------------------------------");
+            System.out.println("No suggestions found for this query\n");
+        }
+
         return ret;
     }
 
-    public static PriorityQueue<Suggestion> calculate(Set<Query> querySet, Map<String, Integer> qcFreq) {
+    public static PriorityQueue<Suggestion> getTopSuggestions(Map<String, Integer> qcFreq) {
 
         PriorityQueue<Suggestion> topFive = new PriorityQueue<Suggestion>();
 
@@ -355,8 +367,11 @@ public class SearchEngine extends Thread {
         StringBuilder sb = new StringBuilder();
         List<Doc> bestTop5 = new ArrayList<>();
         while(!top5.isEmpty()) {
-            Doc d = top5.pollLast().a;
-            sb.append(" " + d.getTitle());
+
+            Pair<Doc, Double> first = top5.pollLast();
+            Doc d = first.a;
+            double r = first.b;
+            sb.append(" " + d.getTitle() + " " + r);
             bestTop5.add(d);
         }
         LOGGER.debug("Top 5 Documents:{}", sb);
