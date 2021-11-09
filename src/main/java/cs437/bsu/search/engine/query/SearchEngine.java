@@ -6,6 +6,9 @@ import cs437.bsu.search.engine.corpus.Token;
 import cs437.bsu.search.engine.index.IndexLoader;
 import cs437.bsu.search.engine.index.Term;
 import cs437.bsu.search.engine.index.Doc;
+import cs437.bsu.search.engine.suggestions.AOLMap;
+import cs437.bsu.search.engine.suggestions.Query;
+import cs437.bsu.search.engine.suggestions.Suggestion;
 import cs437.bsu.search.engine.util.LoggerInitializer;
 import cs437.bsu.search.engine.util.TaskExecutor;
 import edu.stanford.nlp.pipeline.CoreDocument;
@@ -16,6 +19,7 @@ import org.slf4j.Logger;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.Phaser;
 
@@ -36,14 +40,17 @@ public class SearchEngine extends Thread {
     private boolean exit;
     private Scanner queryReader;
     private String newScreen;
+    private AOLMap aolMap;
 
     /**
      * Creates the Search Engine. Note the {@link TextScanner} is loaded and might
      * delay this method invocation a bit, however this prevents further lag in
      * future requests for it.
      */
-    public SearchEngine(){
+    public SearchEngine(AOLMap aolMap){
         exit = false;
+        this.aolMap = aolMap;
+
         queryReader = new Scanner(System.in);
 
         StringBuilder sb = new StringBuilder();
@@ -60,9 +67,15 @@ public class SearchEngine extends Thread {
     public void run() {
         clearScreen();
 
+        boolean setSuggestion = false;
+        ArrayList<String> prevSugg = null;
+
         while (!exit){
-            System.out.print("Please enter a query: ");
-            String query = queryReader.nextLine();
+
+            String query;
+            System.out.print("\nPlease enter a query: ");
+            query = queryReader.nextLine();
+
             LOGGER.info("Query provided: {}", query);
 
             if(query.equalsIgnoreCase(EXIT_KEYWORD)){
@@ -70,10 +83,107 @@ public class SearchEngine extends Thread {
                 continue;
             }
 
+            if(prevSugg != null) {
+                for(int i = 0; i < prevSugg.size(); i++) {
+
+                    String test = query;
+                    String prev = (i+1) + ".";
+
+                    if(test.equals(prev)) {
+
+                        query = prevSugg.get(i);
+                    }
+                }
+            }
+
             processQuery(query);
+            prevSugg = getSuggestions(query);
+            System.out.flush();
         }
         System.out.println("Exiting Search Engine.");
         LOGGER.info("Closing Search Engine.");
+    }
+
+        private ArrayList<String> getSuggestions(String query) {
+
+        Map<String, Set<Query>> queryLogMap = aolMap.getMap();
+        Set<Query> querySessions = queryLogMap.get(query);
+        String[] parts = query.split("\\s+");
+        ArrayList<String> ret = new ArrayList<String>(5);
+
+        if (querySessions != null) {
+
+            // # of sessions in which q' is modified to CQ = qcToItsFreq.get(qc);
+            Map<String, Integer> qcToItsFreq = new HashMap<>();
+
+            Iterator<Query> it = querySessions.iterator();
+            while (it.hasNext()) {
+                Query curr = it.next();
+
+                for (Query qc : curr.getQC(parts)) {
+                    Integer i = qcToItsFreq.get(qc.getQuery());
+
+                    if (i == null)
+                        qcToItsFreq.put(qc.getQuery(), 1);
+                    else
+                        qcToItsFreq.put(qc.getQuery(), i + 1);
+                }
+            }
+
+            PriorityQueue<Suggestion> suggestion = getTopSuggestions(qcToItsFreq);
+            System.out.println("---------------------------------------------------------");
+
+            DecimalFormat df = new DecimalFormat("#.######");
+            int denom = queryLogMap.get(query).size();
+
+            if (suggestion.size() > 0) {
+
+                System.out.println("Instead of \"" + query + "\" would you like to search for: ");
+                for (int i = 0; i < 5; i++) {
+
+                    Suggestion sugg = suggestion.poll();
+
+                    if(sugg != null) {
+
+//                        double score = (float) sugg.getFreq() / denom;
+//                        String sc = df.format(score);
+                        System.out.println("        " + (i+1) + ". " + sugg.getKey() + " ---> Enter " + (i+1) + ".");
+                        ret.add(sugg.getKey());
+                    }
+                    else {
+
+                        break;
+                    }
+                }
+            } else {
+
+                System.out.println("No suggestions found for this query\n");
+            }
+        }
+
+        else {
+
+            System.out.println("---------------------------------------------------------");
+            System.out.println("No suggestions found for this query\n");
+        }
+
+        return ret;
+    }
+
+    public static PriorityQueue<Suggestion> getTopSuggestions(Map<String, Integer> qcFreq) {
+
+        PriorityQueue<Suggestion> topFive = new PriorityQueue<Suggestion>();
+
+        int lowFreq = 0;
+        int highFreq = 0;
+
+        for (String s : qcFreq.keySet()) {
+
+            Suggestion add = new Suggestion(s, qcFreq.get(s));
+            topFive.add(add);
+        }
+
+        return topFive;
     }
 
     /**
@@ -257,8 +367,11 @@ public class SearchEngine extends Thread {
         StringBuilder sb = new StringBuilder();
         List<Doc> bestTop5 = new ArrayList<>();
         while(!top5.isEmpty()) {
-            Doc d = top5.pollLast().a;
-            sb.append(" " + d.getTitle());
+
+            Pair<Doc, Double> first = top5.pollLast();
+            Doc d = first.a;
+            double r = first.b;
+            sb.append(" " + d.getTitle() + " " + r);
             bestTop5.add(d);
         }
         LOGGER.debug("Top 5 Documents:{}", sb);
