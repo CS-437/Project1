@@ -29,6 +29,7 @@ public class Run {
         ArgumentParser ap = new ArgumentParser(args);
         LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Run.class);
 
+        startMemoryInfoTask();
         switch (ArgumentParser.application) {
             case CreateIndex:
                 createIndex(ap.getDirectory());
