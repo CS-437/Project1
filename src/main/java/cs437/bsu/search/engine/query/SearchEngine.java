@@ -3,6 +3,7 @@ package cs437.bsu.search.engine.query;
 import cs437.bsu.search.engine.container.Pair;
 import cs437.bsu.search.engine.corpus.TextScanner;
 import cs437.bsu.search.engine.corpus.Token;
+import cs437.bsu.search.engine.entry.Run;
 import cs437.bsu.search.engine.index.IndexLoader;
 import cs437.bsu.search.engine.index.Term;
 import cs437.bsu.search.engine.index.Doc;
@@ -96,12 +97,16 @@ public class SearchEngine extends Thread {
                 }
             }
 
+            long start = System.currentTimeMillis();
             processQuery(query);
             prevSugg = getSuggestions(query);
             System.out.flush();
+            String time = Run.getTimeLength(System.currentTimeMillis() - start);
+            LOGGER.info("Query Result Time: {}", time);
         }
         System.out.println("Exiting Search Engine.");
         LOGGER.info("Closing Search Engine.");
+        Run.appDone = true;
     }
 
         private ArrayList<String> getSuggestions(String query) {

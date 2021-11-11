@@ -19,6 +19,7 @@ public class Run {
 
     private static Logger LOGGER;
     private static Indexer indexer;
+    public static boolean appDone = false;
 
     /**
      * Entry Point.
@@ -28,6 +29,7 @@ public class Run {
         ArgumentParser ap = new ArgumentParser(args);
         LOGGER = LoggerInitializer.getInstance().getSimpleLogger(Run.class);
 
+        startMemoryInfoTask();
         switch (ArgumentParser.application) {
             case CreateIndex:
                 createIndex(ap.getDirectory());
@@ -103,11 +105,35 @@ public class Run {
      * @param duration Duration of time in milliseconds.
      * @return Formatted time duration HH::MM::SS.mmm
      */
-    private static String getTimeLength(long duration){
+    public static String getTimeLength(long duration){
         long millis = duration % 1000;
         long second = (duration / 1000) % 60;
         long minute = (duration / (1000 * 60)) % 60;
         long hour = (duration / (1000 * 60 * 60)) % 24;
         return String.format("%02d:%02d:%02d.%d", hour, minute, second, millis);
+    }
+
+    /** Starts a tasks to log the current JVM Memory Percentage used. */
+    private static void startMemoryInfoTask(){
+        if(LOGGER.isDebugEnabled()) {
+            TaskExecutor.StartTask(() -> {
+                while (!appDone) {
+                    double usedPercent = getMemoryConsumedPercentage();
+                    LOGGER.debug("JVM Memory Percentage Used: {}%", String.format("%5.2f", usedPercent));
+                    TaskExecutor.sleep(10000);
+                }
+            }, () -> {});
+        }else{
+            LOGGER.info("Debug is not enabled for this logger therefore no JVM Memory Task will be started.");
+        }
+    }
+
+    /** Gets a percentage of the total used memory in the JVM. */
+    public static double getMemoryConsumedPercentage(){
+        Runtime r = Runtime.getRuntime();
+        double usedMemory = r.totalMemory() - r.freeMemory();
+        double maxUsedMemory = usedMemory / r.maxMemory();
+        r.gc();
+        return maxUsedMemory * 100;
     }
 }
