@@ -1,9 +1,6 @@
 package cs437.bsu.search.engine.suggestions;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class AOLMap {
@@ -28,6 +25,9 @@ public class AOLMap {
         File[] files = aolDir.listFiles();
 
         assert files != null;
+
+        queryLogMap = new HashMap<String, Set<Query>>();
+
         for (File f : files) {
 
             BufferedReader br = new BufferedReader(new FileReader(f));
@@ -50,7 +50,6 @@ public class AOLMap {
 
                 if (currentUID == -1) {
 
-                    queryLogMap = new HashMap<String, Set<Query>>();
                     queryLogMap.put(query, new HashSet<Query>());
                     session = new Session(uid, new ArrayList<Query>());
                     queries = new ArrayList<String>();
@@ -98,6 +97,8 @@ public class AOLMap {
 
                 line = br.readLine();
             }
+
+            br.close();
         }
     }
 }
